@@ -6,16 +6,22 @@ yalmip('clear');
 ode_options = odeset ('RelTol', 1e-6, 'AbsTol', 1e-6, ...
     'NormControl', 'on', 'InitialStep', 1.0e-2, 'MaxStep', 1.0);
 
-%% Load polytope model
-load polyModel
+%% Load polytope model and observer matrices
+% Type of observer(N° observer). Sub-observer(N° sub-observer). Matrix 
+RUIO = struct;
+UIOO = struct;
+load polyModelObs
 
 %% Simulation parameters
 Ts = 0.05;                  % Sample time [min]
 Time = 15;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
+Fail_Q1 = 5; Fail_Q2 = 0.43;    % Actuator fault magnitude [5%, 5%]
+Fail_S1 = 2.5; Fail_S2 = -3.5;	% Sensor fault magnitude [0.5% 0.5%]
 
-% %% LPV Models
+% %% Polytope model and observers
+% % This section is commented to reduce simulation time (using pre-calculated observer matrices)
 % Theta_1s_min = 495;              % Minimum output fluid 1 temperature (K)
 % Theta_1s_mid = 497.32;         % Middle output fluid 1 temperature (K)
 % Theta_1s_max = 500;             % Maximum output fluid 1 temperature (K)
@@ -29,8 +35,48 @@ t = 0:Ts:Time-Ts;       % Simulation time
 % M = L^N;                                 % Number of models
 % run HE_polytope;                     % M models
 % 
+% % Observers start point
+% Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
+% Theta_2s = Theta_2s_min;     % Output fluid 2 temperature (K)
+% run HE_linear;
+% x0_obs = [Theta_1s; Theta_2s; Theta_p];
+% 
+% % System start point
+% Theta_1s = Theta_1s_min;     % Output fluid 1 temperature (K)
+% Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
+% run HE_linear;
+% x0 = [Theta_1s; Theta_2s; Theta_p];
+% 
+% % Reduced-order unknown input observer
+% run HE_DLPV_RUIO;
+% 
+% % Unknown input output observer
+% run HE_DLPV_UIOO;
+% 
 % % Save models' data
-% save polyModel.mat
+% save polyModelObs.mat
+
+%% Noise
+sig = 3e-3*([1 1 1])';         % Ouput noise sigma
+
+rng default;                        % Random seed start
+v = sig*randn(1, Nsim);    % Measurement noise v~N(0, sig)
+
+%% Error detection threshold
+Tau = 10;                % Convergence period
+mag_1 = 1.3e-1;     % Value Q1
+mag_2 = 5e-2;        % Value Q2
+mag_3 = 6e-2;        % Value O1
+mag_4 = 2e-1;     % Value O2
+
+threshold = zeros(4, Nsim);
+
+for k = 1:Nsim
+    threshold(1, k) = mag_1 + 1000*exp(-(k-1)/Tau);  % Q1
+    threshold(2, k) = mag_2 + 900*exp(-(k-1)/Tau);    % Q2
+    threshold(3, k) = mag_3 + 100*exp(-(k-1)/Tau);    % O1
+    threshold(4, k) = mag_4 + 1000*exp(-(k-1)/Tau);  % O2
+end
 
 %% MPC controller
 % Constraints
