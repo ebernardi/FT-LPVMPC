@@ -20,7 +20,7 @@ t = 0:Ts:Time-Ts;       % Simulation time
 Fail_Q1 = 5; Fail_Q2 = 0.43;    % Actuator fault magnitude [5%, 5%]
 Fail_S1 = 2.5; Fail_S2 = -3.5;	% Sensor fault magnitude [0.5% 0.5%]
 
-% %% Polytope model and observers
+%% Polytope model and observers
 % % This section is commented to reduce simulation time (using pre-calculated observer matrices)
 % Theta_1s_min = 495;              % Minimum output fluid 1 temperature (K)
 % Theta_1s_mid = 497.32;         % Middle output fluid 1 temperature (K)
@@ -80,7 +80,6 @@ end
 
 %% MPC controller
 % Constraints
-% Constraints
 xmin = [495; 650; 530];
 xmax = [500; 750; 590];
 umin = [90; 7];
@@ -120,70 +119,158 @@ run MHE
 N_MPC = 5;
 run MPC
 
+%% Simulation Setup
+% Fault Tolerant Control System (1 = disable; 2 = enable).Matrix 
+FTCS = struct;
+
 %% Simulation
-% Vector initialization for plots
-state = x0; input = [0; 0]; Y = C*x0; X = x0; tsim = 0;
-Xsp = xsp;
+disp('Simulating...')
+FTC_OFF = 1; FTC_ON = 2;
+for FT = 1:2    % 1 - FT is off; 2 -  FT is on
+    % RUIOs
+    for k = 1:N
+        RUIO(k).Phi = zeros(N, Nsim+1);     % Observer states
+        RUIO(k).X = zeros(nx, Nsim);           % Estimated states
+        RUIO(k).error = zeros(1, Nsim);       % Error
+        RUIO(k).Fact = zeros(1, Nsim);        % Estimated control Input
+        RUIO(k).FQ = zeros(1, Nsim);           % Fault detect Q
+        RUIO(k).delay = 0;                            % Detection delay
+    end
 
-X_MHE = repmat(x0, 1, N_MHE+1); U_MHE = repmat(u0, 1, N_MHE); 
-
-mu_mhe = zeros(M, Nsim+1);
-mu_fuzzy = zeros(M, Nsim);
-obj = zeros(1, Nsim);                  % Objective cost
-
-disp('Iniciando...')
-elapsed_time = zeros(Nsim, 1) ;  % initialize the elapsed times 
-for j = 1:Nsim
-    tk = j*Ts;
+    % UIOOs
+    for k = 1:N
+        UIOO(k).Z = zeros(nx, Nsim+1);      % Observer states
+        UIOO(k).Ymon = zeros(N, Nsim);     % Monitorated outputs
+        UIOO(k).X = zeros(nx, Nsim);           % Estimated states
+        UIOO(k).Y = zeros(nx, Nsim);           % Estimated outputs
+        UIOO(k).res = zeros(nx, Nsim);        % Residue
+        UIOO(k).error = zeros(1, Nsim);       % Error
+        UIOO(k).Fsen = zeros(1, Nsim);       % Estimated sensor fault
+        UIOO(k).FO = zeros(1, Nsim);          % Fault detect S
+    end
     
-	if tk == 4
-        Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
-        Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
-        run HE_linear;
-        xsp = [Theta_1s; Theta_2s; Theta_p];
-    elseif tk == 9
-        Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
-        Theta_2s = Theta_2s_min;     % Output fluid 2 temperature (K)
-        run HE_linear;
-        xsp = [Theta_1s; Theta_2s; Theta_p];
-	end
+    % FTCS matrices
+    FTCS(FT).U = zeros(nu, Nsim);                   % Control Input
+    FTCS(FT).Ufail = zeros(nu, Nsim);              % Faulty control Input
+    FTCS(FT).Uff = zeros(nu, Nsim+1);            % Feedforward control Input
+    FTCS(FT).Ufails = zeros(nu, Nsim);             % Fails of control inputs
+    FTCS(FT).X = zeros(nx, Nsim+1);               % States
+    FTCS(FT).Y = zeros(ny, Nsim);                    % Measure outputs
+    FTCS(FT).Xsp = zeros(nx, Nsim);                % Set-points  
+    FTCS(FT).Y_hat = zeros(ny, Nsim);             % Estimated outputs
+    FTCS(FT).Yfail = zeros(ny, Nsim);               % Faulty measure outputs
+    FTCS(FT).Obj = zeros(1, Nsim);                  % Objective cost
+    FTCS(FT).mu_mhe = zeros(M, Nsim);         % Membership using MHE
+    FTCS(FT).mu_fuzzy = zeros(M, Nsim);        % Membership using fuzzy
 
-    t_tic = tic ;   % to get time evaluated 
+    FTCS(FT).X_MHE = repmat(x0, 1, N_MHE+1);    % MHE states
+    FTCS(FT).U_MHE = repmat(u0, 1, N_MHE);        % MHE inputs
+    FTCS(FT).elapsed_time = zeros(Nsim, 1) ;          % MPC elapsed times 
+
+    % Initial states and inputs
+    FTCS(FT).X(:, 1) = x0;
+    FTCS(FT).Y(:, 1) = C*x0;
+    FTCS(FT).Y_hat(:, 1) = C*x0;
+    RUIO(FT).X(:, 1) = x0;
+    UIOO(FT).X(:, 1) = x0;
+    
+    % Vector initialization for plots
+    FTCS(FT).Yc_sim = C*x0;
+    
+    if FT == FTC_ON
+        disp('Fault tolerant = ON')
+    else
+        disp('Fault tolerant = OFF')
+    end
+
+	for k = 1:Nsim
+        tk = k*Ts; % Simulation time
         
-    mu_fuzzy(:, j) =membership(X(:, j), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
+        % Set-point changes
+        if tk == 4
+            Theta_1s = Theta_1s_min;     % Output fluid 1 temperature (K)
+            Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
+            run HE_linear;
+            xsp = [Theta_1s; Theta_2s; Theta_p];
+        elseif tk == 9
+            Theta_1s = Theta_1s_max;     % Output fluid 1 temperature (K)
+            Theta_2s = Theta_2s_min;     % Output fluid 2 temperature (K)
+            run HE_linear;
+            xsp = [Theta_1s; Theta_2s; Theta_p];
+        end
+        FTCS(FT).Xsp(:, k) = xsp;
+        
+        if k > 1
+            FTCS(FT).mu_mhe(:, k) = FTCS(FT).mu_mhe(:, k-1);
+            FTCS(FT).Y(:, k) = FTCS(FT).Y(:, k-1);
+        end
 
-    [sol, diag] = mhe{X_MHE, U_MHE, mu_mhe(:, j)};
-    if diag
-        msg = ['Infeasible MHE at t = ', num2str(tk)];
-        disp(msg)
-        return;
-    end
-    mu_mhe(:, j+1) = sol;
-
-    [sol, diag] = mpc{X(:, j), xsp, mu_mhe(:, j+1)};
-    if diag
-        msg = ['Infeasible MPC at t = ', num2str(tk)];
-        disp(msg)
-        return;
-    end
-    umpc(:, j) = sol{1}; 
-    obj(j) = sol{2};
-
-    t_tic = toc(t_tic) ;              % get time elapsed
-    elapsed_time(j) = t_tic ;   % store the time elapsed for the run
-
-    % Continuous-time simulation (reality)
-	[tc, x] = ode45(@(x, u) HE(X(:, j), umpc(:, j)), [0 Ts], X(:, j), ode_options);
-    X(:, j+1) = x(end, :)';           % Discrete state vector
-
-    Y = [Y C*x(2:end, :)'];       % Output vector
-    Xsp = [Xsp xsp];               % State vector
-    tsim = [tsim tk];               % Time vector
+        FTCS(FT).mu_fuzzy(:, k) =membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
+        
+        t_tic = tic ;   % to get time evaluated 
+        
+        [sol, diag] = mhe{FTCS(FT).X_MHE, FTCS(FT).U_MHE, FTCS(FT).mu_mhe(:, k)};
+        if diag
+            msg = ['Infeasible MHE at t = ', num2str(tk)];
+            disp(msg)
+            return;
+        end
+        FTCS(FT).mu_mhe(:, k) = sol;
+                
+        [sol, diag] = mpc{FTCS(FT).Y(:, k), FTCS(FT).Xsp(:, k), FTCS(FT).mu_mhe(:, k)};
+        if diag
+            msg = ['Infeasible MPC at t = ', num2str(tk)];
+            disp(msg)
+            return;
+        end
+        FTCS(FT).U(:, k) = sol{1}; FTCS(FT).Obj(k) = sol{2};
+        
+        t_tic = toc(t_tic) ;              % get time elapsed
+        FTCS(FT).elapsed_time(k) = t_tic ;   % store the time elapsed for the run
+        
+        %% Process simulation with ODE
+        [tsim, x] = ode45(@(x, u) HE(FTCS(FT).X(:, k), FTCS(FT).U(:, k)) , [0 Ts], FTCS(FT).X(:, k), ode_options);
+        FTCS(FT).X(:, k+1) = x(end, :)';
+        FTCS(FT).Y(:, k) = C*FTCS(FT).X(:, k);
+        
+        % MHE horizon update
+        FTCS(FT).X_MHE = [FTCS(FT).X_MHE(:, 2:end) FTCS(FT).X(:, k)];
+        FTCS(FT).U_MHE = [FTCS(FT).U_MHE(:, 2:end) FTCS(FT).U(:, k)];
     
-    X_MHE = [X_MHE(:, 2:end) X(:, j)];
-    U_MHE = [U_MHE(:, 2:end) umpc(:, j)];
+	end
+    
+    time_avg = mean(FTCS(FT).elapsed_time) ;
+    msg = ['Mean time = ', num2str(time_avg)];
+    disp(msg)
+    time_avg = max(FTCS(FT).elapsed_time) ;
+    msg = ['Max time = ', num2str(time_avg)];
+    disp(msg)
+    time_avg = min(FTCS(FT).elapsed_time) ;
+    msg = ['Min time = ', num2str(time_avg)];
+    disp(msg)    
+
+    fig = figure('Name', 'States');
+    subplot(311)
+    plot(t, FTCS(FT).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
+    hold on
+    plot(t, FTCS(FT).Y(1, :), 'g--', 'LineWidth', 1.5); hold off
+    xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
+    % axis([0 inf 494 499])
+    % leg = legend('Setpoint', 'Estimated', 'Measured', 'Location', 'SouthEast');
+    % set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
+    % leg.ItemTokenSize = [20, 15];
+    subplot(312)
+    plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
+    hold on
+    plot(t, FTCS(FT).Y(2, :), 'g--', 'LineWidth', 1.5); hold off
+    xlabel('Time [min]'); ylabel('\theta_{2_s} [K]'); grid on
+    % axis([0 inf 675 705])
+    subplot(313)
+    plot(t, FTCS(FT).Y(3, :), 'g--', 'LineWidth', 1.5);
+    xlabel('Time [min]'); ylabel('\theta_p [K]'); grid on
+    % axis([0 inf 554 562])
+        
 end
-mu_mhe = mu_mhe(:, 2:end);
 
 %%
-run enPlotHE
+% run enPlotHE
