@@ -24,88 +24,103 @@ gold = [255 215 0]/255;
 chocolate = [210 105 30]/255;
 arrow = [212 55 144]/255;
 
-error = abs(X(2, :) - xsp(2));
-IAE = trapz(tsim, abs(error));
-ISE = trapz(tsim, error.^2);
-ITAE = trapz(tsim, tsim.*abs(error));
-msg = ['IAE = ', num2str(IAE)];
-disp(msg)
-msg = ['ITAE = ', num2str(ITAE)];
-disp(msg)
-msg = ['ISE = ', num2str(ISE)];
-disp(msg)
+disp('Plotting')
+for FT = 1:2    % 1 - FT is off; 2 -  FT is on
+    
+	if FT == FTC_ON
+        disp('Fault tolerant = ON')
+	else
+        disp('Fault tolerant = OFF')
+    end
+    
+	error = abs(FTCS(FT).Y(2, :) - FTCS(FT).Xsp(2, :));
+    IAE = trapz(t, abs(error));
+    ISE = trapz(t, error.^2);
+    ITAE = trapz(t, t.*abs(error));
+    RMS = sqrt(mean(error.^2));
+    msg = ['IAE = ', num2str(IAE)];
+    disp(msg)
+    msg = ['ITAE = ', num2str(ITAE)];
+    disp(msg)
+    msg = ['ISE = ', num2str(ISE)];
+    disp(msg)
+    msg = ['RMS = ', num2str(RMS)];
+    disp(msg)    
+    
+    time_avg = mean(FTCS(FT).elapsed_time) ;
+    msg = ['Mean time = ', num2str(time_avg)];
+    disp(msg)
+    time_avg = max(FTCS(FT).elapsed_time) ;
+    msg = ['Max time = ', num2str(time_avg)];
+    disp(msg)
+    time_avg = min(FTCS(FT).elapsed_time) ;
+    msg = ['Min time = ', num2str(time_avg)];
+    disp(msg)    
 
-time_avg = mean(elapsed_time) ;
-msg = ['Mean time = ', num2str(time_avg)];
-disp(msg)
-time_avg = max(elapsed_time) ;
-msg = ['Max time = ', num2str(time_avg)];
-disp(msg)
-time_avg = min(elapsed_time) ;
-msg = ['Min time = ', num2str(time_avg)];
-disp(msg)
+    %% Outputs
+    fig = figure('Name', 'Outputs');
+    subplot(311)
+    plot(t, FTCS(FT).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
+    hold on
+    plot(t, FTCS(FT).Y(1, :), 'g--', 'LineWidth', 1.5); hold off
+    xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
+    axis([0 inf 494 501])
+    % leg = legend('Setpoint', 'Estimated', 'Measured', 'Location', 'SouthEast');
+    % set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
+    % leg.ItemTokenSize = [20, 15];
+    subplot(312)
+    plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
+    hold on
+    plot(t, FTCS(FT).Y(2, :), 'g--', 'LineWidth', 1.5); hold off
+    xlabel('Time [min]'); ylabel('\theta_{2_s} [K]'); grid on
+    axis([0 inf 675 715])
+    subplot(313)
+    plot(t, FTCS(FT).Y(3, :), 'g--', 'LineWidth', 1.5);
+    xlabel('Time [min]'); ylabel('\theta_p [K]'); grid on
+    axis([0 inf 554 564])
+    
+%     print -dsvg figs/FTCS_HE_outputs.svg
+   
+    %% State space
+    figure(2)
+    plot(FTCS(FT).X(3, :), FTCS(FT).X(2, :), '-', 'Color', azul, 'LineWidth', 1.5);
+    hold on
+    plot(FTCS(FT).X(3, 1), FTCS(FT).X(2, 1), 'o', 'Color', verde, 'LineWidth', 1.5);
+    plot(FTCS(FT).Xsp(3, :), FTCS(FT).Xsp(2, :), '*', 'Color', bordo, 'LineWidth', 1.5);
+    hold off
 
-%% States
-fig = figure('Name', 'States');
-subplot(311)
-plot(tsim, Xsp(1, :), 'r-.', 'LineWidth', 1.5);
-hold on
-plot(tsim, X(1, :), 'g--', 'LineWidth', 1.5); hold off
-xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
-% axis([0 inf 494 499])
-% leg = legend('Setpoint', 'Estimated', 'Measured', 'Location', 'SouthEast');
-% set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
-% leg.ItemTokenSize = [20, 15];
-subplot(312)
-plot(tsim, Xsp(2, :), 'r-.', 'LineWidth', 1.5);
-hold on
-plot(tsim, X(2, :), 'g--', 'LineWidth', 1.5); hold off
-xlabel('Time [min]'); ylabel('\theta_{2_s} [K]'); grid on
-% axis([0 inf 675 705])
-subplot(313)
-plot(tsim, X(3, :), 'g--', 'LineWidth', 1.5);
-xlabel('Time [min]'); ylabel('\theta_p [K]'); grid on
-% axis([0 inf 554 562])
+    %% Membership
+    fig = figure('Name', 'Membership');
+    hold on
+    for l=1:M
+        plot(t, FTCS(FT).mu_mhe(l, :));
+        legendInfo{l} = ['\mu' num2str(l)];
+        plot(t, FTCS(FT).mu_fuzzy(l, :), '--');
+        legendInfo{l+1} = ['\mu' num2str(l+1)];
+    end
+    ylabel('\mu'), xlabel('Time [min]')
+    legend(legendInfo);
+    xlim([0 Time])
+    hold off
+    
+    %% Input
+    orange_red = [255 69 0]/255;
+    fig = figure('Name', 'Inputs');
+    subplot(2, 1, 1)
+    stairs(t, FTCS(FT).U(1, :), 'Color', orange_red, 'LineWidth', 1.5);
+    xlabel('Time [s]'); ylabel('q_1 [l/m]'); grid on
+    xlim([0 Time])
+    subplot(2, 1, 2)
+    stairs(t, FTCS(FT).U(2, :), 'Color', orange_red, 'LineWidth', 1.5);
+    xlabel('Time [min]'); ylabel('q_2 [l/m]'); grid on
+    xlim([0 Time])
 
-print -dsvg figs/FDD_HE_state.svg
-%% State space
-figure(2)
-plot(X(3, :), X(2, :), '-', 'Color', azul, 'LineWidth', 1.5);
-hold on
-plot(x0(3), x0(2), 'o', 'Color', verde, 'LineWidth', 1.5);
-plot(Xsp(3, :), Xsp(2, :), '*', 'Color', bordo, 'LineWidth', 1.5);
-hold off
+%     print -dsvg figs/FTCS_HE_input.svg    
 
-%% Input
-figure(4)
-subplot(2, 1, 1)
-stairs(t, umpc(1, :), 'Color', orange_red, 'LineWidth', 1.5);
-xlabel('Time [s]'); ylabel('u_1 [l/m]'); grid on
-xlim([0 Time])
-subplot(2, 1, 2)
-stairs(t, umpc(2, :), 'Color', orange_red, 'LineWidth', 1.5);
-xlabel('Time [s]'); ylabel('u_1 [l/m]'); grid on
-xlim([0 Time])
-
-print -dsvg figs/input.svg
-
-%% Objective function
-figure(6)
-plot(t, obj(:))
-xlim([0 Time])
-xlabel('Muestra'); ylabel('objective');
-
-%% Membership
-figure(31)
-hold on
-for l=1:M
-    plot(t, mu_mhe(l, :));
-    legendInfo{l} = ['\mu' num2str(l)];
-    plot(t, mu_fuzzy(l, :), '--');
-    legendInfo{l+1} = ['\mu' num2str(l+1)];
+    %% Objective function
+    fig = figure('Name', 'Objective function');
+    plot(t, FTCS(FT).Obj(:))
+    xlim([0 Time])
+    xlabel('Time [min]'); ylabel('Cost');
+    
 end
-ylabel('\mu'), xlabel('Time [s]')
-legend(legendInfo);
-xlim([0 Time])
-% title('Pertenencia')
-hold off

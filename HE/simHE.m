@@ -80,10 +80,10 @@ end
 
 %% MPC controller
 % Constraints
-xmin = [480; 650; 530];
-xmax = [520; 750; 590];
-umin = [70; 7];
-umax = [150; 20];
+xmin = [490; 675; 545];
+xmax = [505; 715; 570];
+umin = [80; 7];
+umax = [130; 11];
 
 % Wheight matrix
 Qx = sys(1).Cd'*sys(1).Cd;
@@ -115,7 +115,7 @@ FTCS = struct;
 %% Simulation
 disp('Simulating...')
 FTC_OFF = 1; FTC_ON = 2;
-for FT = 1:1    % 1 - FT is off; 2 -  FT is on
+for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     
     % RUIOs
     for k = 1:N
@@ -194,8 +194,8 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];
         elseif tk == 9
-            Theta_1s = Theta_1s_max;     % Output fluid 1 temperature (K)
-            Theta_2s = Theta_2s_min;     % Output fluid 2 temperature (K)
+            Theta_1s = Theta_1s_mid+2;     % Output fluid 1 temperature (K)
+            Theta_2s = Theta_2s_mid+2;     % Output fluid 2 temperature (K)
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];
         end
@@ -204,9 +204,10 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
         if k > 1
             FTCS(FT).mu_mhe(:, k) = FTCS(FT).mu_mhe(:, k-1);
             FTCS(FT).Y(:, k) = FTCS(FT).Y(:, k-1);
+            FTCS(FT).Uff(:, k) = FTCS(FT).Uff(:, k-1);
         end
 
-        FTCS(FT).mu_fuzzy(:, k) =membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
+        FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
         
         t_tic = tic ;   % to get time evaluated 
         
@@ -217,8 +218,9 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
             return;
         end
         FTCS(FT).mu_mhe(:, k) = sol;
+%         FTCS(FT).mu_mhe(:, k) = [0; 0; 0; 0; 0; 0; 0; 0; 1];
                 
-        [sol, diag] = mpc{FTCS(FT).Y(:, k), FTCS(FT).Xsp(:, k), FTCS(FT).mu_mhe(:, k)};
+        [sol, diag] = mpc{FTCS(FT).Y(:, k), FTCS(FT).Xsp(:, k), FTCS(FT).Uff(:, k), FTCS(FT).mu_mhe(:, k)};
         if diag
             msg = ['Infeasible MPC at t = ', num2str(tk)];
             disp(msg)
@@ -229,81 +231,54 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
         t_tic = toc(t_tic) ;              % get time elapsed
         FTCS(FT).elapsed_time(k) = t_tic ;   % store the time elapsed for the run
         
+   %% Actuator fault income
+        % No fault
+        FTCS(FT).Ufails(:, k) = [0; 0];
+        FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);      
+        FTCS(FT).Umax(:, k) = umax;
+        FTCS(FT).Umin(:, k) = umin;
+ 
+        % Q1 fault
+        if tk > 10 && tk < 20
+            FTCS(FT).Ufails(:, k) = [Fail_Q1; 0];
+            FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+            if FT == FTC_ON
+                FTCS(FT).Uff(:, k) = [Fail_Q1; 0];
+            else
+                FTCS(FT).Uff(:, k) = [0; 0];
+            end
+        end
+
+%         % Q2 fault
+%         if tk > 20 && tk < 30
+%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
+%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+%         elseif tk >= 30 && tk < 32
+%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
+%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+%         end
+
+        % Natural system saturation
+        for j = 1:nu
+            if FTCS(FT).Ufail(j, k) >= FTCS(FT).Umax(j, k)
+                FTCS(FT).Ufail(j, k) = FTCS(FT).Umax(j, k);
+            elseif FTCS(FT).Ufail(j, k) <= FTCS(FT).Umin(j, k)
+                FTCS(FT).Ufail(j, k) = FTCS(FT).Umin(j, k);
+            end
+        end        
+        
         %% Process simulation with ODE
-        [tsim, x] = ode45(@(x, u) HE(FTCS(FT).X(:, k), FTCS(FT).U(:, k)) , [0 Ts], FTCS(FT).X(:, k), ode_options);
+        [tsim, x] = ode45(@(x, u) HE(FTCS(FT).X(:, k), FTCS(FT).Ufail(:, k)) , [0 Ts], FTCS(FT).X(:, k), ode_options);
         FTCS(FT).X(:, k+1) = x(end, :)';
         FTCS(FT).Y(:, k) = C*FTCS(FT).X(:, k);
         
         % MHE horizon update
         FTCS(FT).X_MHE = [FTCS(FT).X_MHE(:, 2:end) FTCS(FT).X(:, k)];
-        FTCS(FT).U_MHE = [FTCS(FT).U_MHE(:, 2:end) FTCS(FT).U(:, k)];
+        FTCS(FT).U_MHE = [FTCS(FT).U_MHE(:, 2:end) FTCS(FT).U(:, k)+FTCS(FT).Uff(:, k)]; % Update fault compensation
     
 	end
-    
-    time_avg = mean(FTCS(FT).elapsed_time) ;
-    msg = ['Mean time = ', num2str(time_avg)];
-    disp(msg)
-    time_avg = max(FTCS(FT).elapsed_time) ;
-    msg = ['Max time = ', num2str(time_avg)];
-    disp(msg)
-    time_avg = min(FTCS(FT).elapsed_time) ;
-    msg = ['Min time = ', num2str(time_avg)];
-    disp(msg)    
-
-    fig = figure('Name', 'Outputs');
-    subplot(311)
-    plot(t, FTCS(FT).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
-    hold on
-    plot(t, FTCS(FT).Y(1, :), 'g--', 'LineWidth', 1.5); hold off
-    xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
-    % axis([0 inf 494 499])
-    % leg = legend('Setpoint', 'Estimated', 'Measured', 'Location', 'SouthEast');
-    % set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
-    % leg.ItemTokenSize = [20, 15];
-    subplot(312)
-    plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
-    hold on
-    plot(t, FTCS(FT).Y(2, :), 'g--', 'LineWidth', 1.5); hold off
-    xlabel('Time [min]'); ylabel('\theta_{2_s} [K]'); grid on
-    % axis([0 inf 675 705])
-    subplot(313)
-    plot(t, FTCS(FT).Y(3, :), 'g--', 'LineWidth', 1.5);
-    xlabel('Time [min]'); ylabel('\theta_p [K]'); grid on
-    % axis([0 inf 554 562])
-    
-    %% Membership
-    fig = figure('Name', 'Membership');
-    hold on
-    for l=1:M
-        plot(t, FTCS(FT).mu_mhe(l, :));
-        legendInfo{l} = ['\mu' num2str(l)];
-        plot(t, FTCS(FT).mu_fuzzy(l, :), '--');
-        legendInfo{l+1} = ['\mu' num2str(l+1)];
-    end
-    ylabel('\mu'), xlabel('Time [min]')
-    legend(legendInfo);
-    xlim([0 Time])
-    hold off
-    
-    %% Input
-    orange_red = [255 69 0]/255;
-    fig = figure('Name', 'Inputs');
-    subplot(2, 1, 1)
-    stairs(t, FTCS(FT).U(1, :), 'Color', orange_red, 'LineWidth', 1.5);
-    xlabel('Time [s]'); ylabel('q_1 [l/m]'); grid on
-    xlim([0 Time])
-    subplot(2, 1, 2)
-    stairs(t, FTCS(FT).U(2, :), 'Color', orange_red, 'LineWidth', 1.5);
-    xlabel('Time [min]'); ylabel('q_2 [l/m]'); grid on
-    xlim([0 Time])
-    
-    %% Objective function
-    fig = figure('Name', 'Objective function');
-    plot(t, FTCS(FT).Obj(:))
-    xlim([0 Time])
-    xlabel('Time [min]'); ylabel('Cost');
     
 end
 
 %%
-% run enPlotHE
+run enPlotHE
