@@ -80,26 +80,15 @@ end
 
 %% MPC controller
 % Constraints
-xmin = [495; 650; 530];
-xmax = [500; 750; 590];
-umin = [90; 7];
+xmin = [480; 650; 530];
+xmax = [520; 750; 590];
+umin = [70; 7];
 umax = [150; 20];
 
 % Wheight matrix
 Qx = sys(1).Cd'*sys(1).Cd;
 lambda = 0.1;
 Ru = lambda*diag([1 10]);
-
-Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
-Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
-run HE_linear;
-x0 = [Theta_1s; Theta_2s; Theta_p];
-u0 = [Q1; Q2];
-
-Theta_1s = Theta_1s_min;     % Output fluid 1 temperature (K)
-Theta_2s = Theta_2s_max;     % Output fluid 2 temperature (K)
-run HE_linear;
-xsp = [Theta_1s; Theta_2s; Theta_p];
 
 %% Constraint sets
 Z = Polyhedron('lb', [xmin; umin], 'ub', [xmax; umax]); % Extended set
@@ -126,7 +115,8 @@ FTCS = struct;
 %% Simulation
 disp('Simulating...')
 FTC_OFF = 1; FTC_ON = 2;
-for FT = 1:2    % 1 - FT is off; 2 -  FT is on
+for FT = 1:1    % 1 - FT is off; 2 -  FT is on
+    
     % RUIOs
     for k = 1:N
         RUIO(k).Phi = zeros(N, Nsim+1);     % Observer states
@@ -148,6 +138,17 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         UIOO(k).Fsen = zeros(1, Nsim);       % Estimated sensor fault
         UIOO(k).FO = zeros(1, Nsim);          % Fault detect S
     end
+    
+    Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
+    Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
+    run HE_linear;
+    x0 = [Theta_1s; Theta_2s; Theta_p];
+    u0 = [Q1; Q2];
+
+    Theta_1s = Theta_1s_min;     % Output fluid 1 temperature (K)
+    Theta_2s = Theta_2s_max;     % Output fluid 2 temperature (K)
+    run HE_linear;
+    xsp = [Theta_1s; Theta_2s; Theta_p];    
     
     % FTCS matrices
     FTCS(FT).U = zeros(nu, Nsim);                   % Control Input
@@ -249,7 +250,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     msg = ['Min time = ', num2str(time_avg)];
     disp(msg)    
 
-    fig = figure('Name', 'States');
+    fig = figure('Name', 'Outputs');
     subplot(311)
     plot(t, FTCS(FT).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
     hold on
@@ -269,7 +270,39 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     plot(t, FTCS(FT).Y(3, :), 'g--', 'LineWidth', 1.5);
     xlabel('Time [min]'); ylabel('\theta_p [K]'); grid on
     % axis([0 inf 554 562])
-        
+    
+    %% Membership
+    fig = figure('Name', 'Membership');
+    hold on
+    for l=1:M
+        plot(t, FTCS(FT).mu_mhe(l, :));
+        legendInfo{l} = ['\mu' num2str(l)];
+        plot(t, FTCS(FT).mu_fuzzy(l, :), '--');
+        legendInfo{l+1} = ['\mu' num2str(l+1)];
+    end
+    ylabel('\mu'), xlabel('Time [min]')
+    legend(legendInfo);
+    xlim([0 Time])
+    hold off
+    
+    %% Input
+    orange_red = [255 69 0]/255;
+    fig = figure('Name', 'Inputs');
+    subplot(2, 1, 1)
+    stairs(t, FTCS(FT).U(1, :), 'Color', orange_red, 'LineWidth', 1.5);
+    xlabel('Time [s]'); ylabel('q_1 [l/m]'); grid on
+    xlim([0 Time])
+    subplot(2, 1, 2)
+    stairs(t, FTCS(FT).U(2, :), 'Color', orange_red, 'LineWidth', 1.5);
+    xlabel('Time [min]'); ylabel('q_2 [l/m]'); grid on
+    xlim([0 Time])
+    
+    %% Objective function
+    fig = figure('Name', 'Objective function');
+    plot(t, FTCS(FT).Obj(:))
+    xlim([0 Time])
+    xlabel('Time [min]'); ylabel('Cost');
+    
 end
 
 %%
