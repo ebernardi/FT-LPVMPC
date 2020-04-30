@@ -135,7 +135,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     xlabel('Time [min]'); ylabel('|e_q|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
-    %% RUIO error detection
+    %% UIOO error detection
     fig = figure('Name', 'UIOO Error');
     subplot(211)
     plot(t, FTCS(FT).UIOO(1).error, 'b', 'LineWidth', 1.5)
@@ -143,7 +143,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     plot(t, threshold(3, :),  'r--', 'LineWidth', 1.5)
     hold off
     axis([0 inf 0 0.5])
-    xlabel('Time [min]'); ylabel('|e_q|');
+    xlabel('Time [min]'); ylabel('|e_x|');
 
     subplot(212)
     plot(t, FTCS(FT).UIOO(2).error, 'b', 'LineWidth', 1.5)
@@ -151,7 +151,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     plot(t, threshold(4, :),  'r--', 'LineWidth', 1.5)
     hold off
     axis([0 inf 0 4])
-    xlabel('Time [min]'); ylabel('|e_q|');
+    xlabel('Time [min]'); ylabel('|e_x|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
     %% Actuator fault estimation
@@ -173,6 +173,25 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     axis([0 inf -0.5 0])
     xlabel('Time [min]'); ylabel('Q_2 [l/min]');
 
+    %% Sensor fault estimation
+    fig = figure('Name', 'Sensor fault');
+    subplot(211)
+    stairs(t, FTCS(FT).UIOO(1).Fsen, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    stairs(t, FTCS(FT).Yfails(1, :), 'm--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf 0 4])
+    xlabel('Time [min]'); ylabel('\theta_1 [K]');
+%     legend('MPC', 'Actual fault', 'FTMPC', 'Location', 'NorthEast');
+
+    subplot(212)
+    stairs(t, FTCS(FT).UIOO(2).Fsen, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    stairs(t, FTCS(FT).Yfails(2, :), 'm--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf -4 0])
+    xlabel('Time [min]'); ylabel('\theta_2 [K]');
+    
     %% Objective function
     fig = figure('Name', 'Objective function');
     plot(t, FTCS(FT).Obj(:))
