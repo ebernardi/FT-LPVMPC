@@ -82,7 +82,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
 %     print -dsvg figs/FTCS_HE_outputs.svg
    
     %% State space
-    figure(2)
+    fig = figure('Name', 'State space');
     plot(FTCS(FT).X(3, :), FTCS(FT).X(2, :), '-', 'Color', azul, 'LineWidth', 1.5);
     hold on
     plot(FTCS(FT).X(3, 1), FTCS(FT).X(2, 1), 'o', 'Color', verde, 'LineWidth', 1.5);
@@ -104,7 +104,6 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold off
     
     %% Input
-    orange_red = [255 69 0]/255;
     fig = figure('Name', 'Inputs');
     subplot(2, 1, 1)
     stairs(t, FTCS(FT).U(1, :), 'Color', orange_red, 'LineWidth', 1.5);
@@ -116,6 +115,25 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     xlim([0 Time])
 
 %     print -dsvg figs/FTCS_HE_input.svg    
+
+    %% RUIO error detection
+    fig = figure('Name', 'RUIO Error');
+    subplot(211)
+    plot(t, FTCS(FT).RUIO(1).error, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    plot(t, threshold(1, :),  'r--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf 0 2.5])
+    xlabel('Time [min]'); ylabel('|e_q|');
+
+    subplot(212)
+    plot(t, FTCS(FT).RUIO(2).error, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    plot(t, threshold(2, :),  'r--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf 0 1.2])
+    xlabel('Time [min]'); ylabel('|e_q|');
+%     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
     %% Objective function
     fig = figure('Name', 'Objective function');

@@ -14,7 +14,7 @@ load polyModelObs
 
 %% Simulation parameters
 Ts = 0.05;                  % Sample time [min]
-Time = 15;                 % Simulation end time 
+Time = 35;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
 Fail_Q1 = 5; Fail_Q2 = 0.43;    % Actuator fault magnitude [5%, 5%]
@@ -63,7 +63,7 @@ rng default;                        % Random seed start
 v = sig*randn(1, Nsim);    % Measurement noise v~N(0, sig)
 
 %% Error detection threshold
-Tau = 10;                % Convergence period
+Tau = 2;                % Convergence period
 mag_1 = 1.3e-1;     % Value Q1
 mag_2 = 5e-2;        % Value Q2
 mag_3 = 6e-2;        % Value O1
@@ -82,7 +82,7 @@ end
 % Constraints
 xmin = [490; 675; 545];
 xmax = [505; 715; 570];
-umin = [80; 7];
+umin = [70; 7];
 umax = [130; 11];
 
 % Wheight matrix
@@ -172,6 +172,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     FTCS(FT).X(:, 1) = x0;
     FTCS(FT).Y(:, 1) = C*x0;
     FTCS(FT).Y_hat(:, 1) = C*x0;
+    FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
     RUIO(FT).X(:, 1) = x0;
     UIOO(FT).X(:, 1) = x0;
     
@@ -189,13 +190,13 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         
         % Set-point changes
         if tk == 4
-            Theta_1s = Theta_1s_min;     % Output fluid 1 temperature (K)
-            Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
+            Theta_1s = Theta_1s_min+1;     % Output fluid 1 temperature (K)
+            Theta_2s = Theta_2s_mid-1;     % Output fluid 2 temperature (K)
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];
-        elseif tk == 9
-            Theta_1s = Theta_1s_mid+2;     % Output fluid 1 temperature (K)
-            Theta_2s = Theta_2s_mid+2;     % Output fluid 2 temperature (K)
+        elseif tk == 17
+            Theta_1s = Theta_1s_max-1;     % Output fluid 1 temperature (K)
+            Theta_2s = Theta_2s_mid+1;     % Output fluid 2 temperature (K)
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];
         end
@@ -206,9 +207,9 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
             FTCS(FT).Y(:, k) = FTCS(FT).Y(:, k-1);
             FTCS(FT).Uff(:, k) = FTCS(FT).Uff(:, k-1);
         end
-
-        FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
         
+        FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
+      
         t_tic = tic ;   % to get time evaluated 
         
         [sol, diag] = mhe{FTCS(FT).X_MHE, FTCS(FT).U_MHE, FTCS(FT).mu_mhe(:, k)};
@@ -234,29 +235,34 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
    %% Actuator fault income
         % No fault
         FTCS(FT).Ufails(:, k) = [0; 0];
-        FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);      
+        FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);
+        FTCS(FT).Uff(:, k) = [0; 0];
         FTCS(FT).Umax(:, k) = umax;
         FTCS(FT).Umin(:, k) = umin;
  
         % Q1 fault
-        if tk > 10 && tk < 20
+        if tk > 10 && tk < 15
             FTCS(FT).Ufails(:, k) = [Fail_Q1; 0];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
             if FT == FTC_ON
-                FTCS(FT).Uff(:, k) = [Fail_Q1; 0];
-            else
-                FTCS(FT).Uff(:, k) = [0; 0];
+                FTCS(FT).Uff(:, k) = [Fail_Q1; 0];          % Delete
             end
         end
 
-%         % Q2 fault
-%         if tk > 20 && tk < 30
-%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
-%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-%         elseif tk >= 30 && tk < 32
-%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
-%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-%         end
+        % Q2 fault
+        if tk > 20 && tk < 30
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
+            FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+            if FT == FTC_ON
+                FTCS(FT).Uff(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];          % Delete
+            end
+        elseif tk >= 30 && tk < 32
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
+            FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+            if FT == FTC_ON
+                FTCS(FT).Uff(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];          % Delete
+            end
+        end
 
         % Natural system saturation
         for j = 1:nu
@@ -270,11 +276,74 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         %% Process simulation with ODE
         [tsim, x] = ode45(@(x, u) HE(FTCS(FT).X(:, k), FTCS(FT).Ufail(:, k)) , [0 Ts], FTCS(FT).X(:, k), ode_options);
         FTCS(FT).X(:, k+1) = x(end, :)';
-        FTCS(FT).Y(:, k) = C*FTCS(FT).X(:, k);
+
+        % Natural state limits (maybe should be erased)
+        for j = 1:nu
+            if FTCS(FT).X(j, k) >= xmax(j)
+                FTCS(FT).X(j, k) = xmax(j);
+            elseif FTCS(FT).X(j, k) <= xmin(j)
+                FTCS(FT).X(j, k) = xmin(j);
+            end
+        end
+        
+        FTCS(FT).Y(:, k) = C*FTCS(FT).X(:, k);                   % Discrete-time output
+
+        %% Sensor fault income
+        FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);        
+        % TODO: Add sensor faults
+        
+        %% membership
+        FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
+
+        %% LPV-RUIO 1
+        RUIO(1).Phi(:, k+1) = zeros(N, 1);
+        RUIO(1).X(:, k) = zeros(nx, 1);
+        RUIO(1).Fact(k) = zeros(1, 1);
+        for i = 1:M
+            RUIO(1).Phi(:, k+1) = RUIO(1).Phi(:, k+1) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).K*RUIO(1).Phi(:, k) + RUIO(1).O(i).L_ast*FTCS(FT).Yfail(:, k) + RUIO(1).O(i).B_bar_1*FTCS(FT).U(:, k) + RUIO(1).O(i).delta_bar_1);
+            RUIO(1).X(:, k) = RUIO(1).X(:, k) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).T*[RUIO(1).Phi(:, k); RUIO(1).O(i).U_1*FTCS(FT).Yfail(:, k)-RUIO(1).O(i).U_1*RUIO(1).O(i).C_tilde_1*RUIO(1).Phi(:, k)]);
+
+            RUIO(1).Fact(k) = RUIO(1).Fact(k) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).U_1*(FTCS(FT).X(:, k+1) - RUIO(1).O(i).C_tilde_1*RUIO(1).Phi(:, k+1)) + RUIO(1).O(i).A_bar_22*RUIO(1).O(i).U_1*(RUIO(1).O(i).C_tilde_1*RUIO(1).Phi(:, k) - FTCS(FT).Yfail(:, k)) - RUIO(1).O(i).A_bar_21*RUIO(1).Phi(:, k) - RUIO(1).O(i).B_bar_2*FTCS(FT).U(:, k) -  RUIO(1).O(i).delta_bar_2);
+        end
+
+        % Error norm 1
+        RUIO(1).error(k) = sqrt((RUIO(1).X(1, k)-FTCS(FT).Yfail(1, k))^2 + (RUIO(1).X(2, k)-FTCS(FT).Yfail(2, k))^2 + (RUIO(1).X(3, k)-FTCS(FT).Yfail(3, k))^2);
+
+        if RUIO(1).error(k) > threshold(1, k)
+            RUIO(1).FQ(k) = true;
+        else
+            RUIO(1).FQ(k) = false;
+        end
+
+        %% LPV-RUIO 2
+        RUIO(2).Phi(:, k+1) = zeros(N, 1);
+        RUIO(2).X(:, k) = zeros(nx, 1);
+        RUIO(2).Fact(k) = zeros(1, 1);
+        for i = 1:M
+            RUIO(2).Phi(:, k+1) = RUIO(2).Phi(:, k+1) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(2).O(i).K*RUIO(2).Phi(:, k) + RUIO(2).O(i).L_ast*FTCS(FT).Yfail(:, k) + RUIO(2).O(i).B_bar_1*FTCS(FT).U(:, k) + RUIO(2).O(i).delta_bar_1);
+            RUIO(2).X(:, k) = RUIO(2).X(:, k) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(2).O(i).T*[RUIO(2).Phi(:, k); RUIO(2).O(i).U_1*FTCS(FT).Yfail(:, k)-RUIO(2).O(i).U_1*RUIO(2).O(i).C_tilde_1*RUIO(2).Phi(:, k)]);
+
+            RUIO(2).Fact(k) = RUIO(2).Fact(k) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(2).O(i).U_1*(FTCS(FT).X(:, k+1) - RUIO(2).O(i).C_tilde_1*RUIO(2).Phi(:, k+1)) + RUIO(2).O(i).A_bar_22*RUIO(2).O(i).U_1*(RUIO(2).O(i).C_tilde_1*RUIO(2).Phi(:, k) - FTCS(FT).Yfail(:, k)) - RUIO(2).O(i).A_bar_21*RUIO(2).Phi(:, k) - RUIO(2).O(i).B_bar_2*FTCS(FT).U(:, k) -  RUIO(2).O(i).delta_bar_2);
+        end
+
+        % Error norm 2
+        RUIO(2).error(k) = sqrt((RUIO(2).X(1, k)-FTCS(FT).Yfail(1, k))^2 + (RUIO(2).X(2, k)-FTCS(FT).Yfail(2, k))^2 + (RUIO(2).X(3, k)-FTCS(FT).Yfail(3, k))^2);
+
+        if RUIO(2).error(k) > threshold(2, k)
+            RUIO(2).FQ(k) = true;
+        else
+            RUIO(2).FQ(k) = false;
+        end
         
         % MHE horizon update
         FTCS(FT).X_MHE = [FTCS(FT).X_MHE(:, 2:end) FTCS(FT).X(:, k)];
         FTCS(FT).U_MHE = [FTCS(FT).U_MHE(:, 2:end) FTCS(FT).U(:, k)+FTCS(FT).Uff(:, k)]; % Update fault compensation
+        
+        % Save data to plot
+        FTCS(FT).RUIO(1).error(k) = RUIO(1).error(k);
+        FTCS(FT).RUIO(1).Fact(k) = RUIO(1).Fact(k);
+        FTCS(FT).RUIO(2).error(k) = RUIO(2).error(k);
+        FTCS(FT).RUIO(2).Fact(k) = RUIO(2).Fact(k);
     
 	end
     
