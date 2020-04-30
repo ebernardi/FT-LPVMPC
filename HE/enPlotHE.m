@@ -62,7 +62,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     subplot(311)
     plot(t, FTCS(FT).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
     hold on
-    plot(t, FTCS(FT).Y(1, :), 'g--', 'LineWidth', 1.5); hold off
+    plot(t, FTCS(FT).Y(1, :), 'g--', t, FTCS(FT).Yfail(1, :), ':k', 'LineWidth', 1.5); hold off
     xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
     axis([0 inf 494 501])
     % leg = legend('Setpoint', 'Estimated', 'Measured', 'Location', 'SouthEast');
@@ -71,7 +71,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     subplot(312)
     plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
     hold on
-    plot(t, FTCS(FT).Y(2, :), 'g--', 'LineWidth', 1.5); hold off
+    plot(t, FTCS(FT).Y(2, :), 'g--', t, FTCS(FT).Yfail(2, :), ':k', 'LineWidth', 1.5); hold off
     xlabel('Time [min]'); ylabel('\theta_{2_s} [K]'); grid on
     axis([0 inf 675 715])
     subplot(313)
@@ -132,6 +132,25 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     plot(t, threshold(2, :),  'r--', 'LineWidth', 1.5)
     hold off
     axis([0 inf 0 1.2])
+    xlabel('Time [min]'); ylabel('|e_q|');
+%     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
+
+    %% RUIO error detection
+    fig = figure('Name', 'UIOO Error');
+    subplot(211)
+    plot(t, FTCS(FT).UIOO(1).error, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    plot(t, threshold(3, :),  'r--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf 0 0.5])
+    xlabel('Time [min]'); ylabel('|e_q|');
+
+    subplot(212)
+    plot(t, FTCS(FT).UIOO(2).error, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    plot(t, threshold(4, :),  'r--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf 0 4])
     xlabel('Time [min]'); ylabel('|e_q|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 

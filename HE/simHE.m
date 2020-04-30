@@ -14,7 +14,7 @@ load polyModelObs
 
 %% Simulation parameters
 Ts = 0.05;                  % Sample time [min]
-Time = 35;                 % Simulation end time 
+Time = 50;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
 Fail_Q1 = 5; Fail_Q2 = 0.43;    % Actuator fault magnitude [5%, 5%]
@@ -208,7 +208,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
             FTCS(FT).Uff(:, k) = FTCS(FT).Uff(:, k-1);
         end
         
-        FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
+%         FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
       
         t_tic = tic ;   % to get time evaluated 
         
@@ -279,8 +279,17 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Y(:, k) = C*FTCS(FT).X(:, k);                   % Discrete-time output
 
         %% Sensor fault income
-        FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);        
-        % TODO: Add sensor faults
+        FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);
+        
+        if tk > 35 && tk < 45
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; Fail_S2-Fail_S2*(exp(-5*(tk-35)/1)); 0];
+        elseif tk >= 45 && tk < 47
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; +Fail_S2*(exp(-8*(tk-45)/1)); 0];
+        end
+
+        if tk > 50 && tk < 61
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
+        end
         
         %% membership
         FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), Theta_1s_min, Theta_1s_mid, Theta_1s_max, Theta_2s_min, Theta_2s_mid, Theta_2s_max);
@@ -325,6 +334,50 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
             RUIO(2).FQ(k) = false;
         end
         
+        %% LPV-UIOO 1
+        UIOO(1).Ymon(:, k) = UIOO(1).T2*FTCS(FT).Yfail(:, k);
+        UIOO(1).Z(:, k+1) = zeros(nx, 1);      
+        for i = 1:M
+            UIOO(1).Z(:, k+1) = UIOO(1).Z(:, k+1) + FTCS(FT).mu_fuzzy(i, k)*(UIOO(1).O(i).N*UIOO(1).Z(:, k) + UIOO(1).O(i).L*UIOO(1).Ymon(:, k) + UIOO(1).O(i).G*FTCS(FT).U(:, k) + UIOO(1).O(i).Tg);
+        end
+
+        UIOO(1).X(:, k) = UIOO(1).Z(:, k) - UIOO(1).E*UIOO(1).Ymon(:, k);
+        UIOO(1).Y(:, k) = C*UIOO(1).X(:, k);
+
+        % Residue 1
+        UIOO(1).res(:, k) = FTCS(FT).Yfail(:, k) - UIOO(1).Y(:, k);
+
+        % Error norm 1
+        UIOO(1).error(k) = sqrt(UIOO(1).res(1, k)^2);
+
+        if UIOO(1).error(k) > threshold(3, k)
+            UIOO(1).FO(k) = true;
+        else
+            UIOO(1).FO(k) = false;
+        end        
+
+        %% LPV-UIOO 2
+        UIOO(2).Ymon(:, k) = UIOO(2).T2*FTCS(FT).Yfail(:, k);
+        UIOO(2).Z(:, k+1) = zeros(nx, 1);      
+        for i = 1:M
+            UIOO(2).Z(:, k+1) = UIOO(2).Z(:, k+1) + FTCS(FT).mu_fuzzy(i, k)*(UIOO(2).O(i).N*UIOO(2).Z(:, k) + UIOO(2).O(i).L*UIOO(2).Ymon(:, k) + UIOO(2).O(i).G*FTCS(FT).U(:, k) + UIOO(2).O(i).Tg);
+        end
+
+        UIOO(2).X(:, k) = UIOO(2).Z(:, k) - UIOO(2).E*UIOO(2).Ymon(:, k);
+        UIOO(2).Y(:, k) = Cd*UIOO(2).X(:, k);
+
+        % Residue 2
+        UIOO(2).res(:, k) = FTCS(FT).Yfail(:, k) - UIOO(2).Y(:, k);
+
+        % Error norm 2
+        UIOO(2).error(k) = sqrt(UIOO(2).res(2, k)^2);
+
+        if UIOO(2).error(k) > threshold(4, k)
+            UIOO(2).FO(k) = true;
+        else
+            UIOO(2).FO(k) = false;
+        end        
+        
         %% Actuator fault estimation
         if RUIO(1).FQ(k) && ~RUIO(2).FQ(k)% && ~UIOO(1).FO(k) && UIOO(2).FO(k) % Actuator fault 1
             if RUIO(2).delay > 1
@@ -365,6 +418,11 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).RUIO(1).Fact(k) = RUIO(1).Fact(k);
         FTCS(FT).RUIO(2).error(k) = RUIO(2).error(k);
         FTCS(FT).RUIO(2).Fact(k) = RUIO(2).Fact(k);
+        
+        FTCS(FT).UIOO(1).error(k) = UIOO(1).error(k);
+        FTCS(FT).UIOO(1).Fsen(k) = UIOO(1).Fsen(k);
+        FTCS(FT).UIOO(2).error(k) = UIOO(2).error(k);
+        FTCS(FT).UIOO(2).Fsen(k) = UIOO(2).Fsen(k);        
     
 	end
     
