@@ -236,7 +236,6 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         % No fault
         FTCS(FT).Ufails(:, k) = [0; 0];
         FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);
-        FTCS(FT).Uff(:, k) = [0; 0];
         FTCS(FT).Umax(:, k) = umax;
         FTCS(FT).Umin(:, k) = umin;
  
@@ -244,24 +243,15 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         if tk > 10 && tk < 15
             FTCS(FT).Ufails(:, k) = [Fail_Q1; 0];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-            if FT == FTC_ON
-                FTCS(FT).Uff(:, k) = [Fail_Q1; 0];          % Delete
-            end
         end
 
         % Q2 fault
         if tk > 20 && tk < 30
             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-            if FT == FTC_ON
-                FTCS(FT).Uff(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];          % Delete
-            end
         elseif tk >= 30 && tk < 32
             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-            if FT == FTC_ON
-                FTCS(FT).Uff(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];          % Delete
-            end
         end
 
         % Natural system saturation
@@ -333,6 +323,37 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
             RUIO(2).FQ(k) = true;
         else
             RUIO(2).FQ(k) = false;
+        end
+        
+        %% Actuator fault estimation
+        if RUIO(1).FQ(k) && ~RUIO(2).FQ(k)% && ~UIOO(1).FO(k) && UIOO(2).FO(k) % Actuator fault 1
+            if RUIO(2).delay > 1
+                RUIO(2).Fact(k) = RUIO(2).Fact(k);
+            else
+                RUIO(2).delay = RUIO(2).delay + 1;
+                RUIO(2).Fact(k) = 0;
+            end
+        else
+            RUIO(2).delay = 0;
+            RUIO(2).Fact(k) = 0;
+        end
+        if ~RUIO(1).FQ(k) && RUIO(2).FQ(k)% && UIOO(1).FO(k) && ~UIOO(2).FO(k) % Actuator fault 2
+            if RUIO(1).delay > 1
+                RUIO(1).Fact(k) = RUIO(1).Fact(k);
+            else
+                RUIO(1).delay = RUIO(1).delay + 1;
+                RUIO(1).Fact(k) = 0;
+            end
+        else
+            RUIO(1).delay = 0;
+            RUIO(1).Fact(k) = 0;       
+        end
+        
+        % If FT-MPC is enabled
+        if FT == FTC_ON
+            FTCS(FT).Uff(:, k) = [RUIO(1).Fact(k); RUIO(2).Fact(k)];
+        else
+            FTCS(FT).Uff(:, k) = [0; 0];
         end
         
         % MHE horizon update
