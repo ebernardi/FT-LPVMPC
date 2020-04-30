@@ -190,7 +190,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         
         % Set-point changes
         if tk == 4
-            Theta_1s = Theta_1s_min+1;     % Output fluid 1 temperature (K)
+            Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
             Theta_2s = Theta_2s_mid-1;     % Output fluid 2 temperature (K)
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];

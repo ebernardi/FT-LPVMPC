@@ -135,6 +135,25 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     xlabel('Time [min]'); ylabel('|e_q|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
+    %% Actuator fault estimation
+    fig = figure('Name', 'Actuator fault');
+    subplot(211)
+    stairs(t, FTCS(FT).RUIO(1).Fact, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    stairs(t, FTCS(FT).Ufails(1, :), 'm--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf 0 6])
+    xlabel('Time [min]'); ylabel('Q_1 [l/min]');
+%     legend('MPC', 'Actual fault', 'FTMPC', 'Location', 'NorthEast');
+
+    subplot(212)
+    stairs(t, FTCS(FT).RUIO(2).Fact, 'b', 'LineWidth', 1.5)
+    hold on; grid on
+    stairs(t, FTCS(FT).Ufails(2, :), 'm--', 'LineWidth', 1.5)
+    hold off
+    axis([0 inf -0.5 0])
+    xlabel('Time [min]'); ylabel('Q_2 [l/min]');
+
     %% Objective function
     fig = figure('Name', 'Objective function');
     plot(t, FTCS(FT).Obj(:))
