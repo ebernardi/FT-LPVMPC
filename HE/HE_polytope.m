@@ -83,7 +83,7 @@ for i = 1:M
     Theta_p = (h_2*Theta_2s + h_1*Theta_1s) / (h_2 + h_1);
 
     % Linear states
-    Xinit = [Theta_1s; Theta_2s; Theta_p]
+    Xinit = [Theta_1s; Theta_2s; Theta_p];
 
     % Fluid 1 flow rate
     Q1 = ( a*h_1*(Theta_1s-Theta_p) ) / ( Rho1*Cp_1*(Theta_1e - Theta_1s) );
@@ -98,7 +98,7 @@ for i = 1:M
     % Theta_p = ( (Q1*Rho1*Cp_1 + a*h_1)*Theta_1s - Q1*Rho1*Cp_1*Theta_1e ) / (a*h_1)
 
     % Inputs
-    Uinit = [Q1; Q2]
+    Uinit = [Q1; Q2];
 
     % Linear systems matrices
     A = subs(A_sym, {rho1, rho2, rhop, Cp1, Cp2, Cpp, Ar, h1, h2, V1, V2, Vp, theta1e, theta2e, theta1s, theta2s, thetap, q1, q2}, ...

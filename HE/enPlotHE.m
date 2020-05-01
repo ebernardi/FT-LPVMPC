@@ -64,10 +64,10 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold on
     plot(t, FTCS(FT).Y(1, :), 'g--', t, FTCS(FT).Yfail(1, :), ':k', 'LineWidth', 1.5); hold off
     xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
-    axis([0 inf 494 501])
-    % leg = legend('Setpoint', 'Estimated', 'Measured', 'Location', 'SouthEast');
-    % set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
-    % leg.ItemTokenSize = [20, 15];
+    axis([0 inf 494 502])
+    leg = legend('Setpoint', 'Actual', 'Measured', 'Location', 'SouthEast');
+    set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
+    leg.ItemTokenSize = [20, 15];
     subplot(312)
     plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
     hold on
@@ -77,7 +77,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     subplot(313)
     plot(t, FTCS(FT).Y(3, :), 'g--', 'LineWidth', 1.5);
     xlabel('Time [min]'); ylabel('\theta_p [K]'); grid on
-    axis([0 inf 554 564])
+    axis([0 inf 556 568])
     
 %     print -dsvg figs/FTCS_HE_outputs.svg
    
@@ -142,7 +142,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(3, :),  'r--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf 0 0.5])
+    axis([0 inf 0 2])
     xlabel('Time [min]'); ylabel('|e_x|');
 
     subplot(212)
