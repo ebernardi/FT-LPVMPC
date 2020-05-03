@@ -58,7 +58,7 @@ Fail_S1 = 2.5; Fail_S2 = -3.5;	% Sensor fault magnitude [0.5% 0.5%]
 % save polyModelObs.mat
 
 %% Noise
-sig = 3e-3*([1 1 1])';         % Ouput noise sigma
+sig = 5e-4*([1 5 2])';         % Ouput noise sigma
 
 rng default;                        % Random seed start
 v = sig*randn(1, Nsim);    % Measurement noise v~N(0, sig)
@@ -87,7 +87,7 @@ umin = [70; 7];
 umax = [130; 11];
 
 % Wheight matrix
-Qx = sys(1).Cd'*sys(1).Cd;
+Qx = Cd'*Cd;
 lambda = 0.1;
 Ru = lambda*diag([1 10]);
 
@@ -189,18 +189,18 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         
         % Set-point changes
         if tk == 4
-            Theta_1s = Theta_1s_mid;        % Output fluid 1 temperature (K)
-            Theta_2s = Theta_2s_mid-1;     % Output fluid 2 temperature (K)
+            Theta_1s = Theta_1s_mid;
+            Theta_2s = Theta_2s_mid-1;
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];
         elseif tk == 17
-            Theta_1s = Theta_1s_max-1;     % Output fluid 1 temperature (K)
-            Theta_2s = Theta_2s_mid+1;     % Output fluid 2 temperature (K)
+            Theta_1s = Theta_1s_max-1;
+            Theta_2s = Theta_2s_mid+1;
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];
         elseif tk == 47
-            Theta_1s = Theta_1s_min+2;     % Output fluid 1 temperature (K)
-            Theta_2s = Theta_2s_max;        % Output fluid 2 temperature (K)
+            Theta_1s = Theta_1s_min+2;
+            Theta_2s = Theta_2s_max;
             run HE_linear;
             xsp = [Theta_1s; Theta_2s; Theta_p];            
         end

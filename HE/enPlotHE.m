@@ -65,8 +65,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     plot(t, FTCS(FT).Y(1, :), 'g--', t, FTCS(FT).Yfail(1, :), ':k', 'LineWidth', 1.5); hold off
     xlabel('Time [min]'); ylabel('\theta_{1_s} [K]'); grid on
     axis([0 inf 494 502])
-    leg = legend('Setpoint', 'Actual', 'Measured', 'Location', 'SouthEast');
-    set(leg, 'Position', [0.748 0.764 0.148 0.109], 'FontSize', 8);
+    leg = legend('Setpoint', 'Actual', 'Measured', 'Location', 'NorthWest');
     leg.ItemTokenSize = [20, 15];
     subplot(312)
     plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
