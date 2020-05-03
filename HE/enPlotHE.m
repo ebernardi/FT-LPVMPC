@@ -106,7 +106,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     fig = figure('Name', 'Inputs');
     subplot(2, 1, 1)
     stairs(t, FTCS(FT).U(1, :), 'Color', orange_red, 'LineWidth', 1.5);
-    xlabel('Time [s]'); ylabel('q_1 [l/m]'); grid on
+    xlabel('Time [min]'); ylabel('q_1 [l/m]'); grid on
     xlim([0 Time])
     subplot(2, 1, 2)
     stairs(t, FTCS(FT).U(2, :), 'Color', orange_red, 'LineWidth', 1.5);

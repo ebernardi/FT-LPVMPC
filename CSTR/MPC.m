@@ -5,6 +5,7 @@ yalmip('clear')
 x = sdpvar(nx*ones(1, N_MPC+1), ones(1, N_MPC+1));
 u = sdpvar(nu*ones(1, N_MPC), ones(1, N_MPC));
 xs = sdpvar(nx, 1);
+uf = sdpvar(nu, 1);
 mu = sdpvar(M, 1);
 
 % Artificial variables
@@ -24,13 +25,13 @@ gamma = 10*Plqr;
 for k = 1:N_MPC
     % Objective
     objective = objective + (x{k}-xa)'*Qx*(x{k}-xa); 
-    objective = objective + (u{k}-ua)'*Ru*(u{k}-ua);
+    objective = objective + (u{k}+uf-ua)'*Ru*(u{k}+uf-ua);
 
     % Dynamic constraint    
-    constraints = [constraints, x{k+1} == A*x{k} + B*u{k} + deltad];
+    constraints = [constraints, x{k+1} == A*x{k} + B*(u{k}+uf) + deltad];
 
     % Box-type constraint
-    constraints = [constraints, umin <= u{k} <= umax];
+    constraints = [constraints, umin <= u{k}+uf <= umax];
     constraints = [constraints, xmin <= x{k} <= xmax];
 end
 
@@ -43,7 +44,7 @@ constraints = [constraints, xa == A*xa + B*ua + deltad];        % Artificial var
 % constraints = [constraints, Xtermx.A*x{N_MPC+1} <= Xtermx.b]; % Inequality terminal constraint
 
 % Defining the parameters in, and the solution
-parameters = {x{1}, xs, mu};
+parameters = {x{1}, xs, uf, mu};
 solution = {u{1}, objective};
 
 % Options for Optimizer  
