@@ -117,13 +117,13 @@ for i = 1:M
     % Euler discretization method
     sys(i).Ad = (A*Ts) + eye(nx); sys(i).Bd = B*Ts; sys(i).deltad = delta*Ts;
     
-    % Zero order holder discretization method
-    Abar = [A delta; zeros(1, nx) 0];
-    Bbar = [B; zeros(1, nu)];
-    Cbar = [C zeros(ny, 1)];
-    Dbar = D;
-    [sys(i).Abard, sys(i).Bbard, sys(i).Cbard, sys(i).Dbard] = c2dm(Abar, Bbar, Cbar, Dbar, Ts, 'zoh');
-    sys(i).Ad = sys(i).Abard(1:nx, 1:nx); sys(i).Bd = sys(i).Bbard(1:nx, 1:nu); sys(i).deltad = sys(i).Abard(1:nx, nx+1);
+%     % Zero order holder discretization method
+%     Abar = [A delta; zeros(1, nx) 0];
+%     Bbar = [B; zeros(1, nu)];
+%     Cbar = [C zeros(ny, 1)];
+%     Dbar = D;
+%     [sys(i).Abard, sys(i).Bbard, sys(i).Cbard, sys(i).Dbard] = c2dm(Abar, Bbar, Cbar, Dbar, Ts, 'zoh');
+%     sys(i).Ad = sys(i).Abard(1:nx, 1:nx); sys(i).Bd = sys(i).Bbard(1:nx, 1:nu); sys(i).deltad = sys(i).Abard(1:nx, nx+1);
 
     % Common matrices
     sys(i).Cd = C; sys(i).Dd = D;

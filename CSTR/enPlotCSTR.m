@@ -25,7 +25,7 @@ chocolate = [210 105 30]/255;
 arrow = [212 55 144]/255;
 
 disp('Plotting')
-for FT = 1:2    % 1 - FT is off; 2 -  FT is on
+for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     
 	if FT == FTC_ON
         disp('Fault tolerant = ON')
@@ -57,7 +57,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     msg = ['Min time = ', num2str(time_avg)];
     disp(msg)    
 
-        %% Outputs
+    %% Outputs
     fig = figure('Name', 'Outputs');
     subplot(311)
     plot(t, FTCS(FT).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
@@ -69,15 +69,15 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     leg = legend('Setpoint', 'Actual', 'Measured', 'Location', 'NorthWest');
     leg.ItemTokenSize = [20, 15];
     subplot(312)
-    plot(t, FTCS(FT).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
-    hold on
-    plot(t, FTCS(FT).Y(2, :), 'g--', t, FTCS(FT).Yfail(2, :), ':k', 'LineWidth', 1.5); hold off
+    plot(t, FTCS(FT).Y(2, :), 'g--', 'LineWidth', 1.5);
     xlabel('Time [min]'); ylabel('C_A [mol/l]'); grid on
     axis([0 inf 0.04 0.12])
     subplot(313)
-    plot(t, FTCS(FT).Y(3, :), 'g--', 'LineWidth', 1.5);
+    plot(t, FTCS(FT).Xsp(3, :), 'r-.', 'LineWidth', 1.5);
+    hold on
+    plot(t, FTCS(FT).Y(3, :), 'g--', t, FTCS(FT).Yfail(3, :), ':k', 'LineWidth', 1.5); hold off
     xlabel('Time [min]'); ylabel('T [K]'); grid on
-    axis([0 inf 440 460])
+    axis([0 inf 440 450])
     
 %     print -dsvg figs/FTCS_CSTR_outputs.svg
 
@@ -123,7 +123,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(1, :),  'r--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf 0 2.5])
+%     axis([0 inf 0 2.5])
     xlabel('Time [min]'); ylabel('|e_q|');
 
     subplot(212)
@@ -131,7 +131,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(2, :),  'r--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf 0 1.2])
+%     axis([0 inf 0 1.2])
     xlabel('Time [min]'); ylabel('|e_q|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
@@ -161,7 +161,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     stairs(t, FTCS(FT).Ufails(1, :), 'm--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf 0 6])
+%     axis([0 inf -6 0])
     xlabel('Time [min]'); ylabel('Qs [l/min]');
 %     legend('MPC', 'Actual fault', 'FTMPC', 'Location', 'NorthEast');
 
@@ -170,7 +170,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     stairs(t, FTCS(FT).Ufails(2, :), 'm--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf -0.5 0])
+%     axis([0 inf -0.5 0])
     xlabel('Time [min]'); ylabel('Qc [l/min]');
     
     %% Sensor fault estimation

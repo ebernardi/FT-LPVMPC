@@ -20,7 +20,7 @@ load polyModelObs
 
 %% Simulation parameters
 Ts = 0.05;                  % Sample time [min]
-Time = 25;                 % Simulation end time 
+Time = 35;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
 
@@ -30,7 +30,7 @@ Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
 %% Polytope model and observers
 % This section is commented to reduce simulation time (using pre-calculated observer matrices)
 % V_min = 90;             % Minimum volume (m^3)
-% V_mid = 100;           % Middle volume (m^3)
+% V_mid = 98;             % Middle volume (m^3)
 % V_max = 110;          % Maximum volume (m^3)
 % 
 % Tr_min = 440;           % Mimimum temperature (°K)
@@ -58,10 +58,10 @@ Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
 % save polyModelObs.mat
 
 %% Noise
-sig = 5e-15*([1 5 2])';         % Ouput noise sigma
+sig = 5e-15*([1 5 2])';       % Ouput noise sigma
 
 rng default;                        % Random seed start
-v = sig*randn(1, Nsim);    % Measurement noise v~N(0, sig)
+v = sig*randn(1, Nsim);     % Measurement noise v~N(0, sig)
 
 %% Error detection threshold
 Tau = 2;               % Convergence period
@@ -74,8 +74,8 @@ threshold = zeros(4, Nsim);
 
 for k = 1:Nsim
     threshold(1, k) = mag_1 + 500*exp(-(k-1)/Tau);  % Q1
-    threshold(2, k) = mag_2 + 100*exp(-(k-1)/Tau);    % Q2
-    threshold(3, k) = mag_3 + 0.6*exp(-(k-1)/Tau);    % O1
+    threshold(2, k) = mag_2 + 100*exp(-(k-1)/Tau);  % Q2
+    threshold(3, k) = mag_3 + 0.6*exp(-(k-1)/Tau);   % O1
     threshold(4, k) = mag_4 + 400*exp(-(k-1)/Tau);  % O2
 end
 
@@ -102,17 +102,17 @@ for i = 1:M
 end
 
 %% MHE
-N_MHE = 10;
+N_MHE = 8;
 run MHE
 
 %% MPC
-N_MPC = 10;
+N_MPC = 8;
 run MPC
 
 %% Simulation
 disp('Simulating...')
 FTC_OFF = 1; FTC_ON = 2;
-for FT = 1:2    % 1 - FT is off; 2 -  FT is on
+for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     
     % RUIOs
     for k = 1:N
@@ -190,12 +190,12 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         % Set-point changes
         if tk == 4
             Vr = V_mid;
-            Tr = Tr_max-1;
+            Tr = Tr_max;
             run CSTR_linear;
             xsp = [Vr; Ca; Tr];
         elseif tk == 9
             Vr = V_max;
-            Tr = Tr_mid-2;
+            Tr = Tr_mid;
             run CSTR_linear;
             xsp = [Vr; Ca; Tr];
         end
@@ -236,20 +236,20 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Ufails(:, k) = [0; 0];
         FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);
  
-%         % Q1 fault
-%         if tk > 10 && tk < 15
-%             FTCS(FT).Ufails(:, k) = [Fail_Q1; 0];
-%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-%         end
-% 
-%         % Q2 fault
-%         if tk > 20 && tk < 30
-%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
-%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-%         elseif tk >= 30 && tk < 32
-%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
-%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-%         end
+        % Q1 fault
+        if tk > 10 && tk < 15
+            FTCS(FT).Ufails(:, k) = [-Fail_Q1; 0];
+            FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+        end
+ 
+        % Q2 fault
+        if tk > 20 && tk < 30
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
+            FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+        elseif tk >= 30 && tk < 32
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
+            FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+        end
 
         % Natural system saturation
         for j = 1:nu
@@ -300,13 +300,8 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         RUIO(1).X(:, k) = zeros(nx, 1);
         RUIO(1).Fact(k) = zeros(1, 1);
         for i = 1:M
-            RUIO(1).Phi(:, k+1) = RUIO(1).Phi(:, k+1) ...
-                                               + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).K*RUIO(1).Phi(:, k) ...
-                                               + RUIO(1).O(i).L_ast*FTCS(FT).Yfail(:, k) ...
-                                               + RUIO(1).O(i).B_bar_1*FTCS(FT).U(:, k) + RUIO(1).O(i).delta_bar_1);
-            RUIO(1).X(:, k) = RUIO(1).X(:, k) ...
-                                       + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).T*[RUIO(1).Phi(:, k); ...
-                                       RUIO(1).O(i).U_1*FTCS(FT).Yfail(:, k)-RUIO(1).O(i).U_1*RUIO(1).O(i).C_tilde_1*RUIO(1).Phi(:, k)]);
+            RUIO(1).Phi(:, k+1) = RUIO(1).Phi(:, k+1) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).K*RUIO(1).Phi(:, k) + RUIO(1).O(i).L_ast*FTCS(FT).Yfail(:, k) + RUIO(1).O(i).B_bar_1*FTCS(FT).U(:, k) + RUIO(1).O(i).delta_bar_1);
+            RUIO(1).X(:, k) = RUIO(1).X(:, k) + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).T*[RUIO(1).Phi(:, k); RUIO(1).O(i).U_1*FTCS(FT).Yfail(:, k)-RUIO(1).O(i).U_1*RUIO(1).O(i).C_tilde_1*RUIO(1).Phi(:, k)]);
 
             RUIO(1).Fact(k) = RUIO(1).Fact(k) ...
                                         + FTCS(FT).mu_fuzzy(i, k)*(RUIO(1).O(i).U_1*(FTCS(FT).X(:, k+1) ...
@@ -317,9 +312,7 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
         end
 
         % Error norm 1
-        RUIO(1).error(k) = sqrt((RUIO(1).X(1, k)-FTCS(FT).Yfail(1, k))^2 ...
-                                             + (RUIO(1).X(2, k)-FTCS(FT).Yfail(2, k))^2 ...
-                                             + (RUIO(1).X(3, k)-FTCS(FT).Yfail(3, k))^2);
+        RUIO(1).error(k) = sqrt((RUIO(1).X(1, k)-FTCS(FT).Yfail(1, k))^2 + (RUIO(1).X(2, k)-FTCS(FT).Yfail(2, k))^2 + (RUIO(1).X(3, k)-FTCS(FT).Yfail(3, k))^2);
 
         if RUIO(1).error(k) > threshold(1, k)
             RUIO(1).FQ(k) = true;
@@ -451,14 +444,14 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
             UIOO(2).Fsen(k) = zeros(size(UIOO(1).res(3, k)));
         end        
         
-        % If FT-MPC is enabled
-        if FT == FTC_ON
-            FTCS(FT).Uff(:, k) = [RUIO(1).Fact(k); RUIO(2).Fact(k)];
-            FTCS(FT).Y_hat(:, k) = [FTCS(FT).Yfail(1, k)-UIOO(1).Fsen(k); FTCS(FT).Yfail(2, k)-UIOO(2).Fsen(k); FTCS(FT).Yfail(3, k)];            
-        else
-            FTCS(FT).Uff(:, k) = [0; 0];
-            FTCS(FT).Y_hat(:, k) = FTCS(FT).Yfail(:, k);            
-        end
+%         % If FT-MPC is enabled
+%         if FT == FTC_ON
+%             FTCS(FT).Uff(:, k) = [RUIO(1).Fact(k); RUIO(2).Fact(k)];
+%             FTCS(FT).Y_hat(:, k) = [FTCS(FT).Yfail(1, k)-UIOO(1).Fsen(k); FTCS(FT).Yfail(2, k)-UIOO(2).Fsen(k); FTCS(FT).Yfail(3, k)];            
+%         else
+%             FTCS(FT).Uff(:, k) = [0; 0];
+%             FTCS(FT).Y_hat(:, k) = FTCS(FT).Yfail(:, k);            
+%         end
         
         % Borrar
         FTCS(FT).Uff(:, k) = [0; 0];

@@ -9,11 +9,11 @@ for j = 1:N
     if j == 1
         RUIO(j).N = [0 0; 0 1; 1 0];
         RUIO(j).Q = [0 0; 0 1; 1 0];
-        RUIO(j).alpha = -1;
+        RUIO(j).alpha = -1; % 0.1
     else
         RUIO(j).N = [1 0; 0 1; 0 0];
         RUIO(j).Q = [0 1; 1 0; 0 0];
-        RUIO(j).alpha = -1;
+        RUIO(j).alpha = -1; % 0.1
     end
     
     % LMIs

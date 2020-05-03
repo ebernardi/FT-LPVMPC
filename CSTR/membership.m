@@ -1,11 +1,11 @@
 function mu = membership(x, V_min, V_mid, V_max, Tr_min, Tr_mid, Tr_max)
-    % States
+    % Estados
     % x(1) => V
     % x(2) => CA
 
     V = x(1);
     T = x(3);
-    % States saturation
+    % Saturación de estados
     if V < V_min
         V = V_min;
     elseif V > V_max
@@ -17,7 +17,7 @@ function mu = membership(x, V_min, V_mid, V_max, Tr_min, Tr_mid, Tr_max)
         T = Tr_max;
 	end
     
-    % State V membership
+    % Membresía estado V
     if V < V_mid
         M1_1 = (V_mid-V)/(V_mid-V_min);
         M1_2 = (V-V_min)/(V_mid-V_min);
@@ -28,7 +28,7 @@ function mu = membership(x, V_min, V_mid, V_max, Tr_min, Tr_mid, Tr_max)
         M1_3 = (V-V_mid)/(V_max-V_mid);
     end
     
-    % State CA membership
+    % Membresía estado CA
     if T < Tr_mid
         M2_1 = (Tr_mid-T)/(Tr_mid-Tr_min);
         M2_2 = (T-Tr_min)/(Tr_mid-Tr_min);
