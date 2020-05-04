@@ -34,7 +34,6 @@ D = zeros(ny, nu);    % Input/Output matrix
 A_sym = jacobian(system, states);
 B_sym = jacobian(system, inputs);
 
-
 % Reactor temperature
 % Tr = -E_R/log(-(q*(Ca-CAe))/(k0*Ca*Vr));
 

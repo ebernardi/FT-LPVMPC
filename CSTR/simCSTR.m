@@ -20,7 +20,7 @@ load polyModelObs
 
 %% Simulation parameters
 Ts = 0.05;                  % Sample time [min]
-Time = 35;                 % Simulation end time 
+Time = 80;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
 
@@ -65,15 +65,15 @@ v = sig*randn(1, Nsim);     % Measurement noise v~N(0, sig)
 
 %% Error detection threshold
 Tau = 2;               % Convergence period
-mag_1 = 2e-2;     % Value Q1
-mag_2 = 2e-4;     % Value Q2
-mag_3 = 3e-6;     % Value O1
-mag_4 = 1e-3;     % Value O2
+mag_1 = 9e-2;     % Value Q1
+mag_2 = 5e-4;     % Value Q2
+mag_3 = 2e-7;     % Value O1
+mag_4 = 5e-3;     % Value O2
 
 threshold = zeros(4, Nsim);
 
 for k = 1:Nsim
-    threshold(1, k) = mag_1 + 500*exp(-(k-1)/Tau);  % Q1
+    threshold(1, k) = mag_1 + 450*exp(-(k-1)/Tau);  % Q1
     threshold(2, k) = mag_2 + 100*exp(-(k-1)/Tau);  % Q2
     threshold(3, k) = mag_3 + 0.6*exp(-(k-1)/Tau);   % O1
     threshold(4, k) = mag_4 + 400*exp(-(k-1)/Tau);  % O2
@@ -112,7 +112,7 @@ run MPC
 %% Simulation
 disp('Simulating...')
 FTC_OFF = 1; FTC_ON = 2;
-for FT = 1:1    % 1 - FT is off; 2 -  FT is on
+for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
     % RUIOs
     for k = 1:N
@@ -146,7 +146,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     % Initial set-point
     Vr = V_min;                  % [l] Reactor volume
     Tr = Tr_max;                  % [K] Output temperature
-    run CSTR_linear;
+	Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
     xsp = [Vr; Ca; Tr];
     
     % FTCS matrices
@@ -187,16 +187,38 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
 
         tk = k*Ts;      % Simulation time
         
+%     %% Setpoint
+%     Xsp(1, k) = V_mid-2;
+%     Xsp(3, k) = Tr_mid;
+% 
+%     if tk < 160
+%         Xsp(3, k) = Tr_min;
+%     elseif tk >= 160 && tk < 200
+%         Xsp(3, k) = Tr_min+((Tr_mid-Tr_min)*(tk-160)/40);
+%     elseif tk >= 200 && tk < 340
+%         Xsp(3, k) = Tr_mid;   
+%     elseif tk >= 340 && tk < 380
+%         Xsp(1, k) = V_mid-2+((V_max-V_mid+2)*(tk-340)/40);
+%     elseif tk >= 380 && tk < 520
+%         Xsp(1, k) = V_max;
+%     elseif tk >= 520 && tk < 560
+%         Xsp(3, k) = Tr_mid+((Tr_max-Tr_mid)*(tk-520)/40);
+%         Xsp(1, k) = V_max;
+%     elseif tk >= 560 && tk < 740
+%         Xsp(3, k) = Tr_max;
+%         Xsp(1, k) = V_max;
+%     end
+        
         % Set-point changes
         if tk == 4
-            Vr = V_mid;
-            Tr = Tr_max;
-            run CSTR_linear;
+            Vr = V_mid-2;
+            Tr = Tr_min;
+            Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
-        elseif tk == 9
-            Vr = V_max;
-            Tr = Tr_mid;
-            run CSTR_linear;
+        elseif tk >= 9 && tk < 19
+            Vr = V_mid-2;
+            Tr = Tr_min+((Tr_mid-Tr_min)*(tk-9)/10);
+            Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
         end
         FTCS(FT).Xsp(:, k) = xsp;
@@ -237,7 +259,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);
  
         % Q1 fault
-        if tk > 10 && tk < 15
+        if tk > 35 && tk < 45
             FTCS(FT).Ufails(:, k) = [-Fail_Q1; 0];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
         end
@@ -279,18 +301,18 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Yfails(:, k) = [0; 0; 0];
         FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);
         
-%         if tk > 35 && tk < 45
-%             FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-35)/1))];
-%             FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S2*(exp(-3*(tk-35)/1))];
-%         elseif tk >= 45 && tk < 47
-%             FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-5*(tk-45)/1))];
-%             FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-5*(tk-45)/1))];
-%         end
-% 
-%         if tk > 50 && tk < 61
-%             FTCS(FT).Yfails(:, k) = [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
-%             FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
-%         end
+        if tk > 65 && tk < 75
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-65)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-65)/1))];
+        elseif tk >= 75 && tk < 77
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-5*(tk-75)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-5*(tk-75)/1))];
+        end
+
+        if tk > 50 && tk < 61
+            FTCS(FT).Yfails(:, k) = [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
+        end
         
         %% membership
         FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), V_min, V_mid, V_max, Tr_min, Tr_mid, Tr_max);
@@ -444,19 +466,15 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
             UIOO(2).Fsen(k) = zeros(size(UIOO(1).res(3, k)));
         end        
         
-%         % If FT-MPC is enabled
-%         if FT == FTC_ON
-%             FTCS(FT).Uff(:, k) = [RUIO(1).Fact(k); RUIO(2).Fact(k)];
-%             FTCS(FT).Y_hat(:, k) = [FTCS(FT).Yfail(1, k)-UIOO(1).Fsen(k); FTCS(FT).Yfail(2, k)-UIOO(2).Fsen(k); FTCS(FT).Yfail(3, k)];            
-%         else
-%             FTCS(FT).Uff(:, k) = [0; 0];
-%             FTCS(FT).Y_hat(:, k) = FTCS(FT).Yfail(:, k);            
-%         end
-        
-        % Borrar
-        FTCS(FT).Uff(:, k) = [0; 0];
-        FTCS(FT).Y_hat(:, k) = FTCS(FT).Yfail(:, k);            
-        
+        % If FT-MPC is enabled
+        if FT == FTC_ON
+            FTCS(FT).Uff(:, k) = [RUIO(1).Fact(k); RUIO(2).Fact(k)];
+            FTCS(FT).Y_hat(:, k) = [FTCS(FT).Yfail(1, k)-UIOO(1).Fsen(k); FTCS(FT).Yfail(2, k); FTCS(FT).Yfail(3, k)-UIOO(2).Fsen(k)];
+        else
+            FTCS(FT).Uff(:, k) = [0; 0];
+            FTCS(FT).Y_hat(:, k) = FTCS(FT).Yfail(:, k);            
+        end
+                
         % MHE horizon update
         FTCS(FT).X_MHE = [FTCS(FT).X_MHE(:, 2:end) FTCS(FT).Y_hat(:, k)];                         % Update sensor fault compensation
         FTCS(FT).U_MHE = [FTCS(FT).U_MHE(:, 2:end) FTCS(FT).U(:, k)+FTCS(FT).Uff(:, k)]; % Update actuator fault compensation
@@ -475,6 +493,10 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
 	end
         
 end
+
+yalmip('clear')
+disp('Saving...')
+save FTCS.mat
 
 %%
 run enPlotCSTR

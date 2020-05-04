@@ -1,7 +1,7 @@
 % clc; clear; close all;
 
 % % Load data
-% load runHE
+% load FTCS
 
 % When generates flat figures
 set(0, 'DefaultFigureRenderer', 'painters');
@@ -25,13 +25,13 @@ chocolate = [210 105 30]/255;
 arrow = [212 55 144]/255;
 
 disp('Plotting')
-for FT = 1:1    % 1 - FT is off; 2 -  FT is on
+for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
 	if FT == FTC_ON
         disp('Fault tolerant = ON')
 	else
         disp('Fault tolerant = OFF')
-    end
+	end
     
 	error = abs(FTCS(FT).Y(2, :) - FTCS(FT).Xsp(2, :));
     IAE = trapz(t, abs(error));
@@ -77,7 +77,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     hold on
     plot(t, FTCS(FT).Y(3, :), 'g--', t, FTCS(FT).Yfail(3, :), ':k', 'LineWidth', 1.5); hold off
     xlabel('Time [min]'); ylabel('T [K]'); grid on
-    axis([0 inf 440 450])
+    axis([0 inf 438 452])
     
 %     print -dsvg figs/FTCS_CSTR_outputs.svg
 
@@ -123,7 +123,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(1, :),  'r--', 'LineWidth', 1.5)
     hold off
-%     axis([0 inf 0 2.5])
+    axis([0 inf 0 0.6])
     xlabel('Time [min]'); ylabel('|e_q|');
 
     subplot(212)
@@ -131,7 +131,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(2, :),  'r--', 'LineWidth', 1.5)
     hold off
-%     axis([0 inf 0 1.2])
+    axis([0 inf 0 0.3])
     xlabel('Time [min]'); ylabel('|e_q|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
@@ -142,7 +142,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(3, :),  'r--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf 0 2])
+    axis([0 inf 0 0.3])
     xlabel('Time [min]'); ylabel('|e_x|');
 
     subplot(212)
@@ -150,7 +150,7 @@ for FT = 1:1    % 1 - FT is off; 2 -  FT is on
     hold on; grid on
     plot(t, threshold(4, :),  'r--', 'LineWidth', 1.5)
     hold off
-    axis([0 inf 0 4])
+    axis([0 inf 0 0.3])
     xlabel('Time [min]'); ylabel('|e_x|');
 %     legend('MPC', 'FTMPC', 'Threshold', 'Location', 'NorthWest');
 
