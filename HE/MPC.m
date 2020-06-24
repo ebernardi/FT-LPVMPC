@@ -17,7 +17,6 @@ objective = 0; constraints = [];
 A = [sys.Ad]*kron(mu, eye(nx));
 B = [sys.Bd]*kron(mu, eye(nu));
 deltad = [sys.deltad]*mu;
-Plqr = [sys.Plqr]*kron(mu, eye(nx));
 
 gamma = 10*Plqr;
 
@@ -36,12 +35,12 @@ for k = 1:N_MPC
 end
 
 % Terminal constraints
-objective = objective + (xa-xs)'*gamma*(xa-xs);                  % Artificial variable terminal cost
+objective = objective + (xa-xs)'*gamma*(xa-xs);                                % Artificial variable terminal cost
 objective = objective + (x{N_MPC+1}-xa)'*Plqr*(x{N_MPC+1}-xa);  % Terminal cost
 
-constraints = [constraints, x{N_MPC+1} == xa];                                    % Equality terminal constraint
-constraints = [constraints, xa == A*xa + B*ua + deltad];        % Artificial variables equilibirum condition
-% constraints = [constraints, Xtermx.A*x{N_MPC+1} <= Xtermx.b]; % Inequality terminal constraint
+constraints = [constraints, x{N_MPC+1} == xa];                                % Equality terminal constraint
+constraints = [constraints, xa == A*xa + B*ua + deltad];                   % Artificial variables equilibirum condition
+constraints = [constraints, Xf.A*x{N_MPC+1} <= Xf.b];                      % Inequality terminal constraint
 
 % Defining the parameters in, and the solution
 parameters = {x{1}, xs, uf, mu};

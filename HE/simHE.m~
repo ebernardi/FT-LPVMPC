@@ -95,14 +95,11 @@ Ru = lambda*diag([1 10]);
 Theta_1s = Theta_1s_mid;     % Output fluid 1 temperature (K)
 Theta_2s = Theta_2s_mid;     % Output fluid 2 temperature (K)
 run HE_linear;
-xsp = [Theta_1s; Theta_2s; Theta_p];
+xsp = [Theta_1s; Theta_2s; Theta_p];    
 
-Q1 = (a*h_1*(Theta_1s-Theta_p)) / (Rho1*Cp_1*(Theta_1e - Theta_1s));
-Q2 = (-a*h_2*(Theta_p - Theta_2s)) / (Rho2*Cp_2*(Theta_2e - Theta_2s));
+Q1 = ( a*h_1*(Theta_1s-Theta_p) ) / ( Rho1*Cp_1*(Theta_1e - Theta_1s) );
+Q2 = ( -a*h_2*(Theta_p - Theta_2s) ) / ( Rho2*Cp_2*(Theta_2e - Theta_2s) );
 usp = [Q1; Q2];
-
-% Terminal ingredients
-run terminal_ingredients
 
 %% MHE
 N_MHE = 5;
@@ -486,10 +483,6 @@ for FT = 1:2    % 1 - FT is off; 2 -  FT is on
 	end
     
 end
-
-yalmip('clear')
-disp('Saving...')
-save FTCS.mat
 
 %%
 run enPlotHE
