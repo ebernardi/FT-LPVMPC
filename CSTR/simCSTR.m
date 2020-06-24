@@ -91,15 +91,18 @@ Qx = Cd'*Cd;
 lambda = 0.1;
 Ru = lambda*diag([2 1]);
 
-%% Constraint sets
-Z = Polyhedron('lb', [xmin; umin], 'ub', [xmax; umax]); % Extended set
+% Middle set-point
+Vr = V_mid;                  % [l] Reactor volume
+Tr = Tr_mid;                  % [K] Output temperature
+Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+xsp = [Vr; Ca; Tr];
 
-X = projection(Z, 1:nx); X = minHRep(X);
-U = projection(Z, nx+1:nx+nu); U = minHRep(U);
+Qs = double(solve(qe - qs));
+Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+usp = [Qs; Qc];
 
-for i = 1:M
-    [sys(i).Klqr, sys(i).Plqr] = dlqr(sys(i).Ad, sys(i).Bd, Qx, Ru);
-end
+% Terminal Ingredients
+run terminal_ingredients
 
 %% MHE
 N_MHE = 8;
@@ -138,7 +141,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
     % Initial state
     Vr = V_mid;                  % [l] Reactor volume
-    Tr = Tr_min;                  % [K] Output temperature
+    Tr = Tr_mid;                  % [K] Output temperature
     run CSTR_linear;
     x0 = [Vr; Ca; Tr];
     u0 = [Qs; Qc];

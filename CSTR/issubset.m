@@ -10,7 +10,6 @@ Q = polytope(V(:, 1:end-1), V(:,end));
 if nargin == 2
     flag = le(P, Q);
 elseif nargin == 3
-    % Amplio V en tol para ver si cabe
     Options.abs_tol = tol;
     Options.rel_tol = tol;    
     flag = le(P, Q, Options);
