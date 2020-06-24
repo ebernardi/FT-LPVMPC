@@ -39,8 +39,3 @@ for i = 1:M
         Xf = intersect(Xf, invariant_set);
     end
 end
-
-figure
-plot(Xf, 'color', 'b', 'alpha', 0.2)
-
-pause

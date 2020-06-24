@@ -101,7 +101,7 @@ Qs = double(solve(qe - qs));
 Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
 usp = [Qs; Qc];
 
-% Terminal Ingredients
+% Terminal ingredients
 run terminal_ingredients
 
 %% MHE
