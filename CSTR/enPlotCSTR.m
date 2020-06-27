@@ -1,7 +1,7 @@
 % clc; clear; close all;
 
 % % Load data
-% load FTCS
+load FTCS
 
 % When generates flat figures
 set(0, 'DefaultFigureRenderer', 'painters');
@@ -25,7 +25,7 @@ chocolate = [210 105 30]/255;
 arrow = [212 55 144]/255;
 
 disp('Plotting')
-for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
+for FT = FTC_ON:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
 	if FT == FTC_ON
         disp('Fault tolerant = ON')

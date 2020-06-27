@@ -27,9 +27,9 @@ for j = 1:N
 
     for i = 1:M
         if j == 1
-            UIOO(j).O(i).F = zeros(size(Bd(:, 1)));
+            UIOO(j).O(i).F = zeros(size(sys(1).Bd(:, 1)));
         else
-            UIOO(j).O(i).F = zeros(size(Bd(:, 1)));
+            UIOO(j).O(i).F = zeros(size(sys(1).Bd(:, 1)));
         end
     
         UIOO(j).O(i).W = sdpvar(n, p);

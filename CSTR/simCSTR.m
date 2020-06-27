@@ -15,11 +15,11 @@ UIOO = struct;
 FTCS = struct;
 sys = struct;
 
-% Load models saved
-load polyModelObs
+% Load data saved
+load data
 
 %% Simulation parameters
-Ts = 0.05;                  % Sample time [min]
+Ts = 0.05;                  % Sample time [min] (3 seg)
 Time = 80;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
@@ -27,8 +27,8 @@ t = 0:Ts:Time-Ts;       % Simulation time
 Fail_Q1 = -5; Fail_Q2 = 5;      % Actuator fault magnitude [5%, 5%]
 Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
 
-%% Polytope model and observers
-% This section is commented to reduce simulation time (using pre-calculated observer matrices)
+%% Polytope model, observers and sets
+% This section is commented to reduce simulation time (using pre-calculated matrices)
 % V_min = 90;             % Minimum volume (m^3)
 % V_mid = 98;             % Middle volume (m^3)
 % V_max = 110;          % Maximum volume (m^3)
@@ -42,20 +42,39 @@ Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
 % M = L^N;                  % Number of models
 % run CSTR_polytope;  % M Models
 % 
-% % Observers start point
-% Vr = V_mid;                  % [l] Reactor volume
-% Tr = Tr_min;                  % [K] Output temperature
-% run CSTR_linear;
-% x0_obs = [Vr; Ca; Tr];
-% 
 % % Reduced-order unknown input observer
 % run CSTR_DLPV_RUIO;
 % 
 % % Unknown input output observer
 % run CSTR_DLPV_UIOO;
 % 
-% % Save models' data
-% save polyModelObs.mat
+% % Controller parameters
+% % Constraints
+% xmin = [90; 0.03; 440];
+% xmax = [110; 0.17; 450];
+% umin = [90; 85];
+% umax = [110; 110];
+% 
+% % Wheight matrix
+% Qx = sys(1).Cd'*sys(1).Cd;
+% lambda = 0.1;
+% Ru = lambda*diag([2 1]);
+% 
+% % Middle set-point
+% Vr = V_mid;                  % [l] Reactor volume
+% Tr = Tr_mid;                  % [K] Output temperature
+% Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+% xsp = [Vr; Ca; Tr];
+% 
+% Qs = double(solve(qe - qs));
+% Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+% usp = [Qs; Qc];
+% 
+% % Terminal ingredients
+% run terminal_ingredients
+% 
+% % Save data
+% save data.mat
 
 %% Noise
 sig = 5e-15*([1 5 2])';       % Ouput noise sigma
@@ -79,31 +98,6 @@ for k = 1:Nsim
     threshold(4, k) = mag_4 + 400*exp(-(k-1)/Tau);  % O2
 end
 
-%% MPC controller
-% Constraints
-xmin = [90; 0.03; 430];
-xmax = [110; 0.17; 460];
-umin = [90; 85];
-umax = [110; 105];
-
-% Wheight matrix
-Qx = Cd'*Cd;
-lambda = 0.1;
-Ru = lambda*diag([2 1]);
-
-% Middle set-point
-Vr = V_mid;                  % [l] Reactor volume
-Tr = Tr_mid;                  % [K] Output temperature
-Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
-xsp = [Vr; Ca; Tr];
-
-Qs = double(solve(qe - qs));
-Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
-usp = [Qs; Qc];
-
-% Terminal ingredients
-run terminal_ingredients
-
 %% MHE
 N_MHE = 8;
 run MHE
@@ -115,7 +109,7 @@ run MPC
 %% Simulation
 disp('Simulating...')
 FTC_OFF = 1; FTC_ON = 2;
-for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
+for FT = FTC_ON:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
     % RUIOs
     for k = 1:N
@@ -137,19 +131,25 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         UIOO(k).error = zeros(1, Nsim);       % Error
         UIOO(k).Fsen = zeros(1, Nsim);       % Estimated sensor fault
         UIOO(k).FO = zeros(1, Nsim);          % Fault detect S
-    end
+    end     
     
-    % Initial state
+    % Observers start point
     Vr = V_mid;                  % [l] Reactor volume
-    Tr = Tr_mid;                  % [K] Output temperature
+    Tr = Tr_min;                  % [K] Output temperature
+    run CSTR_linear;
+    x0_obs = [Vr; Ca; Tr];
+
+    % Initial state
+    Vr = V_mid+2;                % [l] Reactor volume
+    Tr = Tr_mid+2;                     % [K] Output temperature
     run CSTR_linear;
     x0 = [Vr; Ca; Tr];
     u0 = [Qs; Qc];
-    
+
     % Initial set-point
-    Vr = V_min;                  % [l] Reactor volume
-    Tr = Tr_max;                  % [K] Output temperature
-	Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+    Vr = V_mid;                  % [l] Reactor volume
+    Tr = Tr_min+2;                  % [K] Output temperature
+    Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
     xsp = [Vr; Ca; Tr];
     
     % FTCS matrices
@@ -190,39 +190,27 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
 
         tk = k*Ts;      % Simulation time
         
-%     %% Setpoint
-%     Xsp(1, k) = V_mid-2;
-%     Xsp(3, k) = Tr_mid;
-% 
-%     if tk < 160
-%         Xsp(3, k) = Tr_min;
-%     elseif tk >= 160 && tk < 200
-%         Xsp(3, k) = Tr_min+((Tr_mid-Tr_min)*(tk-160)/40);
-%     elseif tk >= 200 && tk < 340
-%         Xsp(3, k) = Tr_mid;   
-%     elseif tk >= 340 && tk < 380
-%         Xsp(1, k) = V_mid-2+((V_max-V_mid+2)*(tk-340)/40);
-%     elseif tk >= 380 && tk < 520
-%         Xsp(1, k) = V_max;
-%     elseif tk >= 520 && tk < 560
-%         Xsp(3, k) = Tr_mid+((Tr_max-Tr_mid)*(tk-520)/40);
-%         Xsp(1, k) = V_max;
-%     elseif tk >= 560 && tk < 740
-%         Xsp(3, k) = Tr_max;
-%         Xsp(1, k) = V_max;
-%     end
-        
-        % Set-point changes
-        if tk == 4
-            Vr = V_mid-2;
-            Tr = Tr_min;
+        %% Set-point changes
+        if tk == 7
+            Vr = V_min+1;
+            Tr = Tr_mid;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
-        elseif tk >= 9 && tk < 19
-            Vr = V_mid-2;
-            Tr = Tr_min+((Tr_mid-Tr_min)*(tk-9)/10);
+        elseif tk == 25
+            Vr = V_mid-3;
+            Tr = Tr_min+2;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
+        elseif tk == 45
+            Vr = V_mid;
+            Tr = Tr_mid;
+            Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+            xsp = [Vr; Ca; Tr];
+        elseif tk == 65
+            Vr = V_max;
+            Tr = Tr_mid;
+            Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+            xsp = [Vr; Ca; Tr];            
         end
         FTCS(FT).Xsp(:, k) = xsp;
 
@@ -262,17 +250,17 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k);
  
         % Q1 fault
-        if tk > 35 && tk < 45
+        if tk > 30 && tk < 40
             FTCS(FT).Ufails(:, k) = [-Fail_Q1; 0];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
         end
  
         % Q2 fault
-        if tk > 20 && tk < 30
-            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-20)/1))];
+        if tk > 10 && tk < 20
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-10)/1))];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-        elseif tk >= 30 && tk < 32
-            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-30)/1))];
+        elseif tk >= 20 && tk < 22
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-20)/1))];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
         end
 
@@ -304,17 +292,17 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Yfails(:, k) = [0; 0; 0];
         FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);
         
-        if tk > 65 && tk < 75
-            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-65)/1))];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-65)/1))];
-        elseif tk >= 75 && tk < 77
-            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-5*(tk-75)/1))];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-5*(tk-75)/1))];
+        if tk > 70 && tk < 80
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-70)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-70)/1))];
+        elseif tk >= 80 && tk < 82
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-5*(tk-80)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-5*(tk-80)/1))];
         end
 
-        if tk > 50 && tk < 61
-            FTCS(FT).Yfails(:, k) = [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [Fail_S1-Fail_S1*(exp(-5*(tk-50)/1)); 0; 0];
+        if tk > 50 && tk < 60
+            FTCS(FT).Yfails(:, k) = [Fail_S1-Fail_S1*(exp(-8*(tk-50)/1)); 0; 0];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [Fail_S1-Fail_S1*(exp(-8*(tk-50)/1)); 0; 0];
         end
         
         %% membership
