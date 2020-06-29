@@ -1,1 +1,1 @@
-# LPV_FT-MPC
+# FT-LPVMPC
