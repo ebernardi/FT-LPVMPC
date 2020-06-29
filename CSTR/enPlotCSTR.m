@@ -1,4 +1,4 @@
-% clc; clear; close all;
+clc; clear; close all;
 
 % % Load data
 load FTCS
@@ -25,7 +25,7 @@ chocolate = [210 105 30]/255;
 arrow = [212 55 144]/255;
 
 disp('Plotting')
-for FT = FTC_ON:FTC_ON    % 1 - FT is off; 2 -  FT is on
+for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
 	if FT == FTC_ON
         disp('Fault tolerant = ON')
@@ -173,25 +173,6 @@ for FT = FTC_ON:FTC_ON    % 1 - FT is off; 2 -  FT is on
 %     axis([0 inf -0.5 0])
     xlabel('Time [min]'); ylabel('Qc [l/min]');
     
-    %% Sensor fault estimation
-    fig = figure('Name', 'Sensor fault');
-    subplot(211)
-    stairs(t, FTCS(FT).UIOO(1).Fsen, 'b', 'LineWidth', 1.5)
-    hold on; grid on
-    stairs(t, FTCS(FT).Yfails(1, :), 'm--', 'LineWidth', 1.5)
-    hold off
-    axis([0 inf 0 4])
-    xlabel('Time [min]'); ylabel('V [l]');
-%     legend('MPC', 'Actual fault', 'FTMPC', 'Location', 'NorthEast');
-
-    subplot(212)
-    stairs(t, FTCS(FT).UIOO(2).Fsen, 'b', 'LineWidth', 1.5)
-    hold on; grid on
-    stairs(t, FTCS(FT).Yfails(3, :), 'm--', 'LineWidth', 1.5)
-    hold off
-    axis([0 inf -4 0])
-    xlabel('Time [min]'); ylabel('T [K]');    
-
     %% Objective function
     fig = figure('Name', 'Objective function');
     plot(t, FTCS(FT).Obj(:))
@@ -199,3 +180,123 @@ for FT = FTC_ON:FTC_ON    % 1 - FT is off; 2 -  FT is on
     xlabel('Time [min]'); ylabel('Cost');
     
 end
+
+%% Final figures
+
+%% Output with and without fault-tolerant controller
+fig = figure('Name', 'Outputs');
+subplot(311)
+plot(t, FTCS(FTC_ON).Xsp(1, :), 'r-.', 'LineWidth', 1.5);
+hold on
+plot(t, FTCS(FTC_OFF).Y(1, :), 'b', t, FTCS(FTC_ON).Y(1, :), 'k--', 'LineWidth', 1.5);
+xlabel('Time [min]'); ylabel('V [l]'); grid on; hold off;
+axis([0 Time 90 110])
+leg = legend('Setpoint', 'MPC', 'FT-MPC', 'Location', 'SouthEast');
+leg.ItemTokenSize = [20, 15];
+subplot(312)
+plot(t, FTCS(FTC_ON).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
+hold on
+plot(t, FTCS(FTC_OFF).Y(2, :), 'b', t, FTCS(FTC_ON).Y(2, :), 'k--', 'LineWidth', 1.5);
+xlabel('Time [min]'); ylabel('C_A [mol/l]'); grid on; hold off;
+axis([0 Time 0.06 0.1])
+subplot(313)
+plot(t, FTCS(FTC_ON).Xsp(3, :), 'r-.', 'LineWidth', 1.5);
+hold on
+plot(t, FTCS(FTC_OFF).Y(3, :), 'b', t, FTCS(FTC_ON).Y(3, :), 'k--', 'LineWidth', 1.5); hold off
+xlabel('Time [min]'); ylabel('T [K]'); grid on; hold off;
+axis([0 Time 440 450])
+    
+print -dsvg figs/FTCS_CSTR_outputs.svg
+
+%% Actuator fault estimation
+fig = figure('Name', 'Actuator fault estimation');
+subplot(211)
+stairs(t, FTCS(FTC_ON).Ufails(1, :), 'Color', naranja, 'LineWidth', 1.5)
+hold on;
+stairs(t, FTCS(FTC_ON).RUIO(1).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
+axis([0 Time 0 6])
+xlabel('Time [min]'); ylabel('Qs [l/min]'); grid on; hold off;
+leg = legend('Fault', 'Estimation', 'Location', 'NorthEast');
+leg.ItemTokenSize = [20, 15];
+
+subplot(212)
+stairs(t, FTCS(FTC_ON).Ufails(2, :), 'Color', naranja, 'LineWidth', 1.5)
+hold on;
+stairs(t, FTCS(FTC_ON).RUIO(2).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
+axis([0 Time -6 0])
+xlabel('Time [min]'); ylabel('Qc [l/min]'); grid on; hold off;
+
+% Create axes
+ax = axes('Parent', fig, 'Position', [0.485 0.19 0.284 0.211], 'FontSize', 8);
+hold(ax, 'on');
+stairs(t, FTCS(FTC_ON).Ufails(2, :), 'Color', naranja, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).RUIO(2).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
+xlim(ax, [9.5 12]); ylim(ax, [-5.5 0]);
+box(ax, 'on'); grid(ax, 'on');
+
+% Create textarrow
+annotation(fig, 'textarrow', [0.639 0.606], [0.317 0.316], ...
+    'String', {'Threshold', 'effect'}, 'LineWidth', 1, ...
+    'HorizontalAlignment', 'center', 'HeadWidth', 6, ...
+    'HeadLength', 6, 'FontSize', 8);
+
+print -dsvg figs/FTCS_CSTR_actuator_estimation.svg
+
+%% Sensor fault estimation
+fig = figure('Name', 'Sensor fault estimation');
+subplot(211)
+stairs(t, FTCS(FTC_ON).Yfails(1, :), 'Color', naranja, 'LineWidth', 1.5)
+hold on; grid on
+stairs(t, FTCS(FTC_ON).UIOO(1).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
+hold off
+axis([0 Time 0 2.5])
+xlabel('Time [min]'); ylabel('V [l]');
+leg = legend('Fault', 'Estimation', 'Location', 'NorthWest');
+leg.ItemTokenSize = [20, 15];
+
+subplot(212)
+stairs(t, FTCS(FTC_ON).Yfails(3, :), 'Color', naranja, 'LineWidth', 1.5)
+hold on; grid on
+stairs(t, FTCS(FTC_ON).UIOO(2).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
+hold off
+axis([0 Time -2 0])
+xlabel('Time [min]'); ylabel('T [K]');
+
+% Create axes
+ax = axes('Parent', fig, 'Position', [0.243 0.196 0.284 0.211], 'FontSize', 8);
+hold(ax, 'on');
+stairs(t, FTCS(FTC_ON).Yfails(3, :), 'Color', naranja, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).UIOO(2).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
+xlim(ax, [69.5 71.5]); ylim(ax, [-1.5 0]);
+box(ax, 'on'); grid(ax, 'on');
+
+% Create textarrow
+annotation(fig, 'textarrow', [0.388 0.355], [0.34 0.339], ...
+    'String', {'Threshold', 'effect'}, 'LineWidth', 1, ...
+    'HorizontalAlignment', 'center', 'HeadWidth', 6, ...
+    'HeadLength', 6, 'FontSize', 8);
+
+print -dsvg figs/FTCS_CSTR_sensor_estimation.svg
+
+%% Input
+fig = figure('Name', 'Inputs');
+subplot(2, 1, 1)
+plot(t, umin(1)*ones(1, length(t)), 'r--', 'LineWidth', 1.5)
+hold on
+stairs(t, FTCS(FTC_OFF).U(1, :), 'b', 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).U(1, :), 'k--', 'LineWidth', 1.5);
+plot(t, umax(1)*ones(1, length(t)), 'r--', 'LineWidth', 1.5);
+xlabel('Time [min]'); ylabel('Qs [l/m]'); grid on; hold off;
+xlim([0 Time])
+leg = legend('Constraints', 'MPC', 'FT-MPC', 'Location', 'NorthEast');
+leg.ItemTokenSize = [20, 15];
+set(leg, 'Orientation', 'horizontal');
+subplot(2, 1, 2)
+plot(t, umin(2)*ones(1, length(t)), 'r--', t, umax(2)*ones(1, length(t)), 'r--', 'LineWidth', 1.5)
+hold on
+stairs(t, FTCS(FTC_OFF).U(2, :), 'b', 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).U(2, :), 'k--', 'LineWidth', 1.5);
+xlabel('Time [min]'); ylabel('Qc [l/m]'); grid on; hold off;
+xlim([0 Time])
+
+print -dsvg figs/FTCS_CSTR_input.svg
