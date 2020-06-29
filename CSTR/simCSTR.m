@@ -20,7 +20,7 @@ load data
 
 %% Simulation parameters
 Ts = 0.05;                  % Sample time [min] (3 seg)
-Time = 80;                 % Simulation end time 
+Time = 90;                 % Simulation end time 
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
 
@@ -52,8 +52,8 @@ Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
 % % Constraints
 % xmin = [90; 0.03; 440];
 % xmax = [110; 0.17; 450];
-% umin = [90; 85];
-% umax = [110; 110];
+% umin = [90; 90];
+% umax = [110; 105];
 % 
 % % Wheight matrix
 % Qx = sys(1).Cd'*sys(1).Cd;
@@ -109,7 +109,7 @@ run MPC
 %% Simulation
 disp('Simulating...')
 FTC_OFF = 1; FTC_ON = 2;
-for FT = FTC_ON:FTC_ON    % 1 - FT is off; 2 -  FT is on
+for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     
     % RUIOs
     for k = 1:N
