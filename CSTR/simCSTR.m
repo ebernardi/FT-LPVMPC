@@ -24,8 +24,8 @@ Time = 90;                 % Simulation end time
 Nsim = Time/Ts;        % Simulation steps
 t = 0:Ts:Time-Ts;       % Simulation time
 
-Fail_Q1 = -5; Fail_Q2 = 5;      % Actuator fault magnitude [5%, 5%]
-Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
+Fail_Q1 = -4; Fail_Q2 = 5;      % Actuator fault magnitude [5%, 5%]
+Fail_S1 = 2; Fail_S3 = -2;    % Sensor fault magnitude [2% 0.5%]
 
 %% Polytope model, observers and sets
 % This section is commented to reduce simulation time (using pre-calculated matrices)
@@ -77,7 +77,7 @@ Fail_S1 = 2; Fail_S3 = -1.5;    % Sensor fault magnitude [2% 0.5%]
 % save data.mat
 
 %% Noise
-sig = 5e-15*([1 5 2])';       % Ouput noise sigma
+sig = 1e-4*([1 5e-4 2])';       % Ouput noise sigma
 
 rng default;                        % Random seed start
 v = sig*randn(1, Nsim);     % Measurement noise v~N(0, sig)
@@ -85,8 +85,8 @@ v = sig*randn(1, Nsim);     % Measurement noise v~N(0, sig)
 %% Error detection threshold
 Tau = 2;               % Convergence period
 mag_1 = 9e-2;     % Value Q1
-mag_2 = 5e-4;     % Value Q2
-mag_3 = 2e-7;     % Value O1
+mag_2 = 6e-4;     % Value Q2
+mag_3 = 5e-3;     % Value O1
 mag_4 = 5e-3;     % Value O2
 
 threshold = zeros(4, Nsim);
@@ -293,11 +293,11 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);
         
         if tk > 70 && tk < 80
-            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-70)/1))];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-3*(tk-70)/1))];
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-70)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-70)/1))];
         elseif tk >= 80 && tk < 82
-            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-5*(tk-80)/1))];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-5*(tk-80)/1))];
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-8*(tk-80)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-8*(tk-80)/1))];
         end
 
         if tk > 50 && tk < 60
@@ -417,7 +417,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         
         %% Actuator fault estimation
         % Actuator fault 1
-        if RUIO(1).FQ(k) && ~RUIO(2).FQ(k) && UIOO(1).FO(k) && UIOO(2).FO(k)
+        if RUIO(1).FQ(k) && ~RUIO(2).FQ(k) && ~UIOO(1).FO(k) && UIOO(2).FO(k)
             if RUIO(2).delay > 1
                 RUIO(2).Fact(k) = RUIO(2).Fact(k);
             else
@@ -444,7 +444,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         
         %% Sensor fault estimation
         % Sensor fault 1
-        if RUIO(1).FQ(k) && RUIO(2).FQ(k) && UIOO(1).FO(k) && ~UIOO(2).FO(k)
+        if RUIO(1).FQ(k) && RUIO(2).FQ(k) && ~UIOO(1).FO(k) && ~UIOO(2).FO(k)
             UIOO(1).Fsen(k) = UIOO(2).res(1, k);
         else
             UIOO(1).Fsen(k) = zeros(size(UIOO(2).res(1, k)));
