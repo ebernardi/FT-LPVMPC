@@ -79,7 +79,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     xlabel('Time [min]'); ylabel('T [K]'); grid on
     axis([0 inf 438 452])
     
-%     print -dsvg figs/FTCS_CSTR_outputs.svg
+%     print -dsvg ../Figs/FTCS_CSTR_outputs.svg
 
     %% State space
     fig = figure('Name', 'State space');
@@ -114,7 +114,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     xlabel('Time [min]'); ylabel('Qc [l/m]'); grid on
     xlim([0 Time])
 
-%     print -dsvg figs/FTCS_CSTR_input.svg
+%     print -dsvg ../Figs/FTCS_CSTR_input.svg
 
     %% RUIO error detection
     fig = figure('Name', 'RUIO Error');
@@ -226,7 +226,7 @@ annotation(fig, 'textarrow', [0.591 0.5698], [0.809 0.746], ...
     'String', {'Volume sensor','fault income'}, 'LineWidth', 1, 'HorizontalAlignment', 'center', ...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
     
-print -dsvg figs/FTCS_CSTR_outputs.svg
+print -dsvg ../Figs/FTCS_CSTR_outputs.svg
 
 %% Actuator fault estimation
 fig = figure('Name', 'Actuator fault estimation');
@@ -268,7 +268,7 @@ annotation(fig, 'textarrow', [0.639 0.606], [0.317 0.316], ...
     'HorizontalAlignment', 'center', 'HeadWidth', 6, ...
     'HeadLength', 6, 'FontSize', 8);
 
-print -dsvg figs/FTCS_CSTR_actuator_estimation.svg
+print -dsvg ../Figs/FTCS_CSTR_actuator_estimation.svg
 
 %% Sensor fault estimation
 fig = figure('Name', 'Sensor fault estimation');
@@ -312,7 +312,7 @@ annotation(fig, 'textarrow', [0.37 0.337], [0.728 0.728], ...
     'HorizontalAlignment', 'center', 'HeadWidth', 6, ...
     'HeadLength', 6, 'FontSize', 8);
 
-print -dsvg figs/FTCS_CSTR_sensor_estimation.svg
+print -dsvg ../Figs/FTCS_CSTR_sensor_estimation.svg
 
 %% Input
 fig = figure('Name', 'Inputs');
@@ -342,4 +342,4 @@ annotation(fig, 'textarrow', [0.7877 0.7789], [0.195 0.2261], ...
     'String', {'MPC mistaken', 'fault compensation'}, 'LineWidth', 1, 'HorizontalAlignment', 'center',...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
 
-print -dsvg figs/FTCS_CSTR_input.svg
+print -dsvg ../Figs/FTCS_CSTR_input.svg
