@@ -35,10 +35,9 @@ for k = 1:N_MPC
 end
 
 % Terminal constraints
-objective = objective + (xa-xs)'*gamma*(xa-xs);                                % Artificial variable terminal cost
-objective = objective + (x{N_MPC+1}-xa)'*Plqr*(x{N_MPC+1}-xa);  % Terminal cost
+objective = objective + (xa-xs)'*gamma*(xa-xs);                           % Artificial variable terminal cost
+objective = objective + (x{N_MPC+1}-xa)'*Plqr*(x{N_MPC+1}-xa);			  % Terminal cost
 
-constraints = [constraints, x{N_MPC+1} == xa];                               % Equality terminal constraint
 constraints = [constraints, xa == A*xa + B*ua + deltad];                  % Artificial variables equilibirum condition
 constraints = [constraints, Xf.A*x{N_MPC+1} <= Xf.b];                     % Inequality terminal constraint
 
