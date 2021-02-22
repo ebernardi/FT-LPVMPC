@@ -18,17 +18,17 @@ sys = struct;
 % Load data saved
 load data
 
-%% Simulation parameters
-Ts = 0.05;                  % Sample time [min] (3 seg)
-Time = 90;                 % Simulation end time 
-Nsim = Time/Ts;        % Simulation steps
-t = 0:Ts:Time-Ts;       % Simulation time
-
-Fail_Q1 = -4; Fail_Q2 = 5;      % Actuator fault magnitude [5%, 5%]
-Fail_S1 = 2; Fail_S3 = -2;    % Sensor fault magnitude [2% 0.5%]
-
-%% Polytope model, observers and sets
-% This section is commented to reduce simulation time (using pre-calculated matrices)
+% %% Simulation parameters
+% Ts = 0.05;                  % Sample time [min] (3 seg)
+% Time = 90;                 % Simulation end time 
+% Nsim = Time/Ts;        % Simulation steps
+% t = 0:Ts:Time-Ts;       % Simulation time
+% 
+%  Fail_Q1 = -4; Fail_Q2 = 5;      % Actuator fault magnitude [5%, 5%]
+% Fail_S1 = 2; Fail_S3 = -2;    % Sensor fault magnitude [2% 0.5%]
+% 
+% % Polytope model, observers and sets
+% % This section is commented to reduce simulation time (using pre-calculated matrices)
 % V_min = 90;             % Minimum volume (m^3)
 % V_mid = 98;             % Middle volume (m^3)
 % V_max = 110;          % Maximum volume (m^3)
@@ -56,22 +56,25 @@ Fail_S1 = 2; Fail_S3 = -2;    % Sensor fault magnitude [2% 0.5%]
 % umax = [110; 105];
 % 
 % % Wheight matrix
-% Qx = sys(1).Cd'*sys(1).Cd;
-% lambda = 0.1;
-% Ru = lambda*diag([2 1]);
+% Qx = 1e-5*diag([1 1 1]);%1e-5
+% lambda = 1e-6;%1e-6
+% Ru = lambda*diag([20 1]);%15 1
 % 
 % % Middle set-point
 % Vr = V_mid;                  % [l] Reactor volume
 % Tr = Tr_mid;                  % [K] Output temperature
 % Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
 % xsp = [Vr; Ca; Tr];
-% 
 % Qs = double(solve(qe - qs));
 % Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
 % usp = [Qs; Qc];
 % 
+% |u| ≤ Usp
+% u_abs = [10; 5]; % umax-u_ss (can't handle asymmetric input constraints)
 % % Terminal ingredients
-% run terminal_ingredients
+% % run terminal_ingredients
+% run terminalIngredients
+% ellipse(Wbmi, xsp, 20, 'black', '-')
 % 
 % % Save data
 % save data.mat
@@ -134,7 +137,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     end     
     
     % Observers start point
-    Vr = V_mid;                  % [l] Reactor volume
+    Vr = V_mid+2;                  % [l] Reactor volume
     Tr = Tr_min;                  % [K] Output temperature
     run CSTR_linear;
     x0_obs = [Vr; Ca; Tr];
@@ -145,12 +148,16 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     run CSTR_linear;
     x0 = [Vr; Ca; Tr];
     u0 = [Qs; Qc];
-
+    
     % Initial set-point
     Vr = V_mid;                  % [l] Reactor volume
-    Tr = Tr_min+2;                  % [K] Output temperature
+    Tr = Tr_mid;                  % [K] Output temperature
     Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
     xsp = [Vr; Ca; Tr];
+    Qs = double(solve(qe - qs));
+    Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+    usp = [Qs; Qc];
+    plot3(xsp(1), xsp(2), xsp(3), '.')
     
     % FTCS matrices
     FTCS(FT).U = zeros(nu, Nsim);                   % Control Input
@@ -160,6 +167,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
     FTCS(FT).X = zeros(nx, Nsim+1);               % States
     FTCS(FT).Y = zeros(ny, Nsim);                    % Measure outputs
     FTCS(FT).Xsp = zeros(nx, Nsim);                % Set-points  
+    FTCS(FT).Usp = zeros(nu, Nsim);               % Control Input set-point
     FTCS(FT).Y_hat = zeros(ny, Nsim);             % Estimated outputs
     FTCS(FT).Yfail = zeros(ny, Nsim);               % Faulty measure outputs
     FTCS(FT).Yfails = zeros(ny, Nsim);              % Fails of measure outputs
@@ -196,23 +204,36 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
             Tr = Tr_mid;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
+            Qs = double(solve(qe - qs));
+            Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+            usp = [Qs; Qc];
         elseif tk == 25
             Vr = V_mid-3;
             Tr = Tr_min+2;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
+            Qs = double(solve(qe - qs));
+            Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+            usp = [Qs; Qc];
         elseif tk == 45
             Vr = V_mid;
             Tr = Tr_mid;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];
+            Qs = double(solve(qe - qs));
+            Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+            usp = [Qs; Qc];
         elseif tk == 65
             Vr = V_max;
             Tr = Tr_mid;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
             xsp = [Vr; Ca; Tr];            
+            Qs = double(solve(qe - qs));
+            Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+            usp = [Qs; Qc];
         end
         FTCS(FT).Xsp(:, k) = xsp;
+        FTCS(FT).Usp(:, k) = usp;
 
         % Update data
         if k > 1
@@ -231,15 +252,17 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
             return;
         end
         FTCS(FT).mu_mhe(:, k) = sol;
-        
+
         %% MPC QP
-        [sol, diag] = mpc{FTCS(FT).Y_hat(:, k), FTCS(FT).Xsp(:, k), FTCS(FT).Uff(:, k), FTCS(FT).mu_mhe(:, k)};
+        [sol, diag] = mpc{FTCS(FT).Y_hat(:, k), FTCS(FT).Xsp(:, k), FTCS(FT).Usp(:, k), FTCS(FT).Uff(:, k), FTCS(FT).mu_mhe(:, k)};
         if diag
             msg = ['Infeasible MPC at t = ', num2str(tk)];
             disp(msg)
             return;
         end
         FTCS(FT).U(:, k) = sol{1}; FTCS(FT).Obj(k) = sol{2};
+        xpred = sol{3};
+        xa = sol{4};
         
         t_tic = toc(t_tic) ;              % Get time elapsed
         FTCS(FT).elapsed_time(k) = t_tic ;   % Store the time elapsed for the run

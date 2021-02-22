@@ -5,6 +5,7 @@ yalmip('clear')
 x = sdpvar(nx*ones(1, N_MPC+1), ones(1, N_MPC+1));
 u = sdpvar(nu*ones(1, N_MPC), ones(1, N_MPC));
 xs = sdpvar(nx, 1);
+us = sdpvar(nu, 1);
 uf = sdpvar(nu, 1);
 mu = sdpvar(M, 1);
 
@@ -13,37 +14,49 @@ xa = sdpvar(nx, 1);
 ua = sdpvar(nu, 1);
 
 objective = 0; constraints = [];
+gamma = 10*Pbmi;
 
 A = [sys.Ad]*kron(mu, eye(nx));
 B = [sys.Bd]*kron(mu, eye(nu));
-deltad = [sys.deltad]*mu;
-
-gamma = 10*Plqr;
+delta = [sys.deltad]*mu;
 
 % Stage constraints and objective
 for k = 1:N_MPC
     % Objective
+    % With auxiliary variable
     objective = objective + (x{k}-xa)'*Qx*(x{k}-xa); 
     objective = objective + (u{k}+uf-ua)'*Ru*(u{k}+uf-ua);
+% 	% Without auxiliary variable
+%     objective = objective + (x{k}-xs)'*Qx*(x{k}-xs); 
+%     objective = objective + (u{k}+uf-us)'*Ru*(u{k}+uf-us);
 
     % Dynamic constraint    
-    constraints = [constraints, x{k+1} == A*x{k} + B*(u{k}+uf) + deltad];
+    constraints = [constraints, x{k+1} == A*x{k} + B*(u{k}+uf) + delta];
 
     % Box-type constraint
     constraints = [constraints, umin <= u{k}+uf <= umax];
     constraints = [constraints, xmin <= x{k} <= xmax];
 end
 
-% Terminal constraints
-objective = objective + (xa-xs)'*gamma*(xa-xs);                           % Artificial variable terminal cost
-objective = objective + (x{N_MPC+1}-xa)'*Plqr*(x{N_MPC+1}-xa);			  % Terminal cost
+%% BMI 
+% With auxiliary variable
+% Terminal cost
+objective = objective + (xa-xs)'*gamma*(xa-xs);
+objective = objective + (x{N_MPC+1}-xa)'*Pbmi*(x{N_MPC+1}-xa); 
 
-constraints = [constraints, xa == A*xa + B*ua + deltad];                  % Artificial variables equilibirum condition
-constraints = [constraints, Xf.A*x{N_MPC+1} <= Xf.b];                     % Inequality terminal constraint
+% Terminal constraint
+constraints = [constraints, xa == A*xa + B*ua + delta]; % Artificial variables equilibirum condition
+constraints = [constraints, (x{N_MPC+1}-xa)'*Wbmi*(x{N_MPC+1}-xa) <= 1];
+
+% % Without auxiliary variable
+% % Terminal cost
+% objective = objective + (x{N_MPC+1}-xs)'*Pbmi*(x{N_MPC+1}-xs);
+% % Terminal constraint
+% constraints = [constraints, (x{N_MPC+1}-xs)'*Wbmi*(x{N_MPC+1}-xs) <= 1];
 
 % Defining the parameters in, and the solution
-parameters = {x{1}, xs, uf, mu};
-solution = {u{1}, objective};
+parameters = {x{1}, xs, us, uf, mu};
+solution = {u{1}, objective, [x{:}], xa};
 
 % Options for Optimizer  
 options = sdpsettings('solver', 'gurobi');

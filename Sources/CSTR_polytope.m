@@ -36,45 +36,68 @@ A_sym = jacobian(system, states);
 B_sym = jacobian(system, inputs);
 
 for i = 1:M
-    switch i
-        case 1
-            % System 1 (V = V_min [l]; T = T_min [K])
-            Vr = V_min;				% [l] Reactor volume
-            Tr = Tr_min;             % [K] Output temperature
-        case 2
-            % System 2 (V = V_min [l]; T = T_mid [K])
-            Vr = V_min;				% [l] Reactor volume
-            Tr = Tr_mid;             % [K] Output temperature
-        case 3
-            % System 3 (V = V_min [l]; T = T_max [K])
-            Vr = V_min;				% [l] Reactor volume
-            Tr = Tr_max;            % [K] Output temperature
-        case 4
-            % System 4 (V = V_mid [l]; T = T_min [K])
-            Vr = V_mid;				% [l] Reactor volume
-            Tr = Tr_min;             % [K] Output temperature
-        case 5
-            % System 5 (V = V_mid [l]; T = T_mid [K])
-            Vr = V_mid;				% [l] Reactor volume
-            Tr = Tr_mid;             % [K] Output temperature
-        case 6
-            % System 6 (V = V_mid [l]; T = T_max [K])
-            Vr = V_mid;				% [l] Reactor volume
-            Tr = Tr_max;            % [K] Output temperature
-        case 7
-            % System 7 (V = V_max [l]; T = T_min [K])
-            Vr = V_max;			   % [l] Reactor volume
-            Tr = Tr_min;             % [K] Output temperature
-        case 8
-            % System 8 (V = V_max [l]; T = T_mid [K])
-            Vr = V_max;			   % [l] Reactor volume
-            Tr = Tr_mid;             % [K] Output temperature
-        case 9
-            % System 9 (V = V_max [l]; T = T_max [K])
-            Vr = V_max;				% [l] Reactor volume
-            Tr = Tr_max;             % [K] Output temperature
-        otherwise
-            break;
+    if M == 9
+        switch i
+            case 1
+                % System 1 (V = V_min [l]; T = T_min [K])
+                Vr = V_min;				% [l] Reactor volume
+                Tr = Tr_min;             % [K] Output temperature
+            case 2
+                % System 2 (V = V_min [l]; T = T_mid [K])
+                Vr = V_min;				% [l] Reactor volume
+                Tr = Tr_mid;             % [K] Output temperature
+            case 3
+                % System 3 (V = V_min [l]; T = T_max [K])
+                Vr = V_min;				% [l] Reactor volume
+                Tr = Tr_max;            % [K] Output temperature
+            case 4
+                % System 4 (V = V_mid [l]; T = T_min [K])
+                Vr = V_mid;				% [l] Reactor volume
+                Tr = Tr_min;             % [K] Output temperature
+            case 5
+                % System 5 (V = V_mid [l]; T = T_mid [K])
+                Vr = V_mid;				% [l] Reactor volume
+                Tr = Tr_mid;             % [K] Output temperature
+            case 6
+                % System 6 (V = V_mid [l]; T = T_max [K])
+                Vr = V_mid;				% [l] Reactor volume
+                Tr = Tr_max;            % [K] Output temperature
+            case 7
+                % System 7 (V = V_max [l]; T = T_min [K])
+                Vr = V_max;			   % [l] Reactor volume
+                Tr = Tr_min;             % [K] Output temperature
+            case 8
+                % System 8 (V = V_max [l]; T = T_mid [K])
+                Vr = V_max;			   % [l] Reactor volume
+                Tr = Tr_mid;             % [K] Output temperature
+            case 9
+                % System 9 (V = V_max [l]; T = T_max [K])
+                Vr = V_max;				% [l] Reactor volume
+                Tr = Tr_max;             % [K] Output temperature
+            otherwise
+                break;
+        end
+    elseif M == 4
+        switch i
+            case 1
+                % System 1 (V = V_min [l]; T = T_min [K])
+                Vr = V_min;				% [l] Reactor volume
+                Tr = Tr_min;             % [K] Output temperature
+            case 2
+                % System 2 (V = V_min [l]; T = T_max [K])
+                Vr = V_min;				% [l] Reactor volume
+                Tr = Tr_max;            % [K] Output temperature
+            case 3
+                % System 3 (V = V_max [l]; T = T_min [K])
+                Vr = V_max;			   % [l] Reactor volume
+                Tr = Tr_min;             % [K] Output temperature
+            case 4
+                % System 4 (V = V_max [l]; T = T_max [K])
+                Vr = V_max;				% [l] Reactor volume
+                Tr = Tr_max;             % [K] Output temperature
+            otherwise
+                break;
+        end
     end
     
     % Reactor temperature

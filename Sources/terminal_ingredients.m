@@ -1,8 +1,7 @@
 %% Terminal Ingredients
-
-% Terminal weight 
 yalmip('clear')
 
+%% Terminal cost weight 
 Y = sdpvar(nx, nx, 'symmetric');
 L = sdpvar(nu, nx, 'full');
 sigma = sdpvar(1);
@@ -17,8 +16,9 @@ for i = 1:M
 end
 optimize(constraints, sigma);
 Plqr = eye(size(value(Y)))/(value(Y)/value(sigma));
+Klqr = value(L)/value(Y)
 
-%% Constraint sets
+%% Terminal set constraint
 Z = Polyhedron('lb', [xmin; umin], 'ub', [xmax; umax]); % Extended set
 
 X = projection(Z, 1:nx); X = minHRep(X);
@@ -39,3 +39,5 @@ for i = 1:M
         Xf = intersect(Xf, invariant_set);
     end
 end
+
+plot(Xf)

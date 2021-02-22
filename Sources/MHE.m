@@ -17,7 +17,7 @@ A = [sys.Ad]*kron(mu, eye(nx));
 B = [sys.Bd]*kron(mu, eye(nu));
 deltad = [sys.deltad]*mu;
 
-Qe = 1e1; Qnux = 8e2; Qnumu = 1e0; % Qe = 1e2; Qnux = 1e2; Qnumu = 1e-1;
+Qe = 1e4; Qnux = 8e2; Qnumu = 1e1; % Qe = 1e4; Qnux = 8e2; Qnumu = 1e1;
 
 % Stage constraints and objective
 for k = 1:N_MHE
