@@ -6,15 +6,134 @@ load FTCS
 % When generates flat figures
 set(0, 'DefaultFigureRenderer', 'painters');
 
+% Indices
+disp('MHE-MPC - Volume')
+error = abs(FTCS(FTC_OFF).Y(1, :) - FTCS(FTC_OFF).Xsp(1));
+IAE = trapz(t, abs(error));
+ISE = trapz(t, error.^2);
+ITAE = trapz(t, t.*abs(error));
+ITSE = trapz(t, t.*error.^2);
+msg = ['IAE = ', num2str(IAE)];
+disp(msg)
+msg = ['ITAE = ', num2str(ITAE)];
+disp(msg)
+msg = ['ISE = ', num2str(ISE)];
+disp(msg)
+msg = ['ITSE = ', num2str(ITSE)];
+disp(msg)
+disp(' ')
+
+disp('MHE-MPC - Ca')
+error = abs(FTCS(FTC_OFF).Y(2, :) - FTCS(FTC_OFF).Xsp(2));
+IAE = trapz(t, abs(error));
+ISE = trapz(t, error.^2);
+ITAE = trapz(t, t.*abs(error));
+ITSE = trapz(t, t.*error.^2);
+msg = ['IAE = ', num2str(IAE)];
+disp(msg)
+msg = ['ITAE = ', num2str(ITAE)];
+disp(msg)
+msg = ['ISE = ', num2str(ISE)];
+disp(msg)
+msg = ['ITSE = ', num2str(ITSE)];
+disp(msg)
+disp(' ')
+
+disp('MHE-MPC - Temperature')
+error = abs(FTCS(FTC_OFF).Y(3, :) - FTCS(FTC_OFF).Xsp(3));
+IAE = trapz(t, abs(error));
+ISE = trapz(t, error.^2);
+ITAE = trapz(t, t.*abs(error));
+ITSE = trapz(t, t.*error.^2);
+msg = ['IAE = ', num2str(IAE)];
+disp(msg)
+msg = ['ITAE = ', num2str(ITAE)];
+disp(msg)
+msg = ['ISE = ', num2str(ISE)];
+disp(msg)
+msg = ['ITSE = ', num2str(ITSE)];
+disp(msg)
+disp(' ')
+
+FTCS(FTC_OFF).input_shifted = [0; FTCS(FTC_OFF).U(1, 1:end-1)'];
+msg = ['MHE-MPC - TV = ', num2str(sum(abs(FTCS(FTC_OFF).input_shifted-FTCS(FTC_OFF).U'))/60)];
+disp(msg)
+disp(' ')
+
+disp('AFTCS - Volume')
+error = abs(FTCS(FTC_ON).Y(1, :) - FTCS(FTC_ON).Xsp(1));
+IAE = trapz(t, abs(error));
+ISE = trapz(t, error.^2);
+ITAE = trapz(t, t.*abs(error));
+ITSE = trapz(t, t.*error.^2);
+msg = ['IAE = ', num2str(IAE)];
+disp(msg)
+msg = ['ITAE = ', num2str(ITAE)];
+disp(msg)
+msg = ['ISE = ', num2str(ISE)];
+disp(msg)
+msg = ['ITSE = ', num2str(ITSE)];
+disp(msg)
+disp(' ')
+
+disp('AFTCS - Ca')
+error = abs(FTCS(FTC_ON).Y(2, :) - FTCS(FTC_ON).Xsp(2));
+IAE = trapz(t, abs(error));
+ISE = trapz(t, error.^2);
+ITAE = trapz(t, t.*abs(error));
+ITSE = trapz(t, t.*error.^2);
+msg = ['IAE = ', num2str(IAE)];
+disp(msg)
+msg = ['ITAE = ', num2str(ITAE)];
+disp(msg)
+msg = ['ISE = ', num2str(ISE)];
+disp(msg)
+msg = ['ITSE = ', num2str(ITSE)];
+disp(msg)
+disp(' ')
+
+disp('AFTCS - Temperature')
+error = abs(FTCS(FTC_ON).Y(3, :) - FTCS(FTC_ON).Xsp(3));
+IAE = trapz(t, abs(error));
+ISE = trapz(t, error.^2);
+ITAE = trapz(t, t.*abs(error));
+ITSE = trapz(t, t.*error.^2);
+msg = ['IAE = ', num2str(IAE)];
+disp(msg)
+msg = ['ITAE = ', num2str(ITAE)];
+disp(msg)
+msg = ['ISE = ', num2str(ISE)];
+disp(msg)
+msg = ['ITSE = ', num2str(ITSE)];
+disp(msg)
+disp(' ')
+
+FTCS(FTC_ON).input_shifted = [0; FTCS(FTC_ON).U(1, 1:end-1)'];
+msg = ['AFTCS - TV = ', num2str(sum(abs(FTCS(FTC_ON).input_shifted-FTCS(FTC_ON).U'))/60)];
+disp(msg)
+
+% error = abs(X(2, 1:5000) - Xsp(2));
+% IAEtrack = trapz(t(1:5000), abs(error));
+% error = abs(X(2, 5001:end) - Xsp(2));
+% IAEpert = trapz(t(5001:end), abs(error));
+% msg = ['IAE tracking = ', num2str(IAEtrack)];
+% disp(msg)
+% msg = ['IAE disturbance = ', num2str(IAEpert)];
+% disp(msg)
+% disp(' ')
+
 vecrojo = [0.7; 0; 0]; vecverde = [0; 0.8; 0]; vecazul = [0; 0; 0.6]; negro = [.1; .1; .1]; gris = [.5; .7; .5];
 
-azul = [0 0.4470 0.7410];
-naranja = [0.8500 0.3250 0.0980];
-amarillo = [0.9290 0.6940 0.1250];
-violeta = [0.4940 0.1840 0.5560];
-verde = [0.4660 0.6740 0.1880];
-celeste = [0.3010 0.7450 0.9330];
-bordo = [0.6350 0.0780 0.1840];
+red = [0.7; 0; 0];
+black = [.1; .1; .1];
+gray = [.5; .7; .5];
+blue = [0 0.4470 0.7410];
+orange = [0.8500 0.3250 0.0980];
+yellow = [0.9290 0.6940 0.1250];
+violet = [0.4940 0.1840 0.5560];
+green = [0.4660 0.6740 0.1880];
+lightblue = [0.3010 0.7450 0.9330];
+purple = [0.6350 0.0780 0.1840];
 
 orange_red = [255 69 0]/255;
 forest_green = [34 139 34]/255;
@@ -200,7 +319,7 @@ hold on
 plot(t, FTCS(FTC_OFF).Y(1, :), 'b', t, FTCS(FTC_ON).Y(1, :), 'k--', 'LineWidth', 1.5);
 xlabel('Time [min]'); ylabel('V [l]'); grid on; hold off;
 axis([0 Time 89 111])
-leg = legend('Setpoint', 'MPC', 'FT-MPC', 'Location', 'SouthEast');
+leg = legend('Setpoint', 'MPC', 'FT-MPC', 'Location', 'NorthEast');
 leg.ItemTokenSize = [20, 15];
 % subplot(312)
 % plot(t, FTCS(FTC_ON).Xsp(2, :), 'r-.', 'LineWidth', 1.5);
@@ -216,7 +335,7 @@ xlabel('Time [min]'); ylabel('T [K]'); grid on; hold off;
 axis([0 Time 440 448])
 
 % Create textarrow
-annotation(fig, 'textarrow',[0.3719 0.3859], [0.742 0.697], ...
+annotation(fig, 'textarrow',[0.4089 0.3929], [0.738 0.707], ...
     'String', {'Q_s fault', 'income'}, 'LineWidth', 1, 'HorizontalAlignment', 'center', ...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
 annotation(fig, 'textarrow', [0.611 0.598], [0.3849 0.338], ...
@@ -225,11 +344,11 @@ annotation(fig, 'textarrow', [0.611 0.598], [0.3849 0.338], ...
 annotation(fig, 'textarrow', [0.402 0.4315], [0.154 0.173], ...
     'String', {'MPC divergence'}, 'LineWidth', 1, 'HorizontalAlignment','center', ...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
-annotation(fig, 'textarrow', [0.7649 0.742], [0.257 0.3119], ...
+annotation(fig, 'textarrow', [0.232 0.22], [0.28 0.3142], ...
     'String', {'Temp. sensor', 'fault income'}, 'LineWidth', 1, 'HorizontalAlignment', 'center',...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
-annotation(fig, 'textarrow', [0.34 0.308], [0.39 0.376], ...
-    'String', {'Error due to','Q_c fault'}, 'LineWidth', 1, 'HorizontalAlignment', 'center', ...
+annotation(fig, 'textarrow', [0.7525 0.741], [0.263 0.309], ...
+    'String', {'Q_c fault', 'income'}, 'LineWidth', 1, 'HorizontalAlignment', 'center', ...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
 annotation(fig, 'textarrow', [0.591 0.5698], [0.809 0.746], ...
     'String', {'Volume sensor','fault income'}, 'LineWidth', 1, 'HorizontalAlignment', 'center', ...
@@ -240,39 +359,39 @@ print -dsvg ../Figs/FTCS_CSTR_outputs.svg
 %% Actuator fault estimation
 fig = figure('Name', 'Actuator fault estimation');
 subplot(211)
-stairs(t, FTCS(FTC_ON).Ufails(1, :), 'Color', naranja, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).Ufails(1, :), 'Color', orange, 'LineWidth', 1.5)
 hold on;
-stairs(t, FTCS(FTC_ON).RUIO(1).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).RUIO(1).Fact, '--', 'Color', blue, 'LineWidth', 1.5)
 axis([0 Time 0 5])
 xlabel('Time [min]'); ylabel('Qs [l/min]'); grid on; hold off;
 leg = legend('Fault', 'Estimation', 'Location', 'NorthWest');
 leg.ItemTokenSize = [20, 15];
 
 subplot(212)
-stairs(t, FTCS(FTC_ON).Ufails(2, :), 'Color', naranja, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).Ufails(2, :), 'Color', orange, 'LineWidth', 1.5)
 hold on;
-stairs(t, FTCS(FTC_ON).RUIO(2).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).RUIO(2).Fact, '--', 'Color', blue, 'LineWidth', 1.5)
 axis([0 Time -6 0])
 xlabel('Time [min]'); ylabel('Qc [l/min]'); grid on; hold off;
 
 % Create axes
 ax = axes('Parent', fig, 'Position', [0.598 0.666 0.267 0.211], 'FontSize', 8);
 hold(ax, 'on');
-stairs(t, FTCS(FTC_ON).Ufails(1, :), 'Color', naranja, 'LineWidth', 1.5)
-stairs(t, FTCS(FTC_ON).RUIO(1).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).Ufails(1, :), 'Color', orange, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).RUIO(1).Fact, '--', 'Color', blue, 'LineWidth', 1.5)
 xlim(ax, [28 42]); ylim(ax, [3.99 4.01]);
 box(ax, 'on'); grid(ax, 'on');
 
 % Create axes
-ax = axes('Parent', fig, 'Position', [0.485 0.19 0.284 0.211], 'FontSize', 8);
+ax = axes('Parent', fig, 'Position', [0.217 0.197 0.309 0.212], 'FontSize', 8);
 hold(ax, 'on');
-stairs(t, FTCS(FTC_ON).Ufails(2, :), 'Color', naranja, 'LineWidth', 1.5)
-stairs(t, FTCS(FTC_ON).RUIO(2).Fact, '--', 'Color', azul, 'LineWidth', 1.5)
-xlim(ax, [9.5 12]); ylim(ax, [-5.5 0]);
+stairs(t, FTCS(FTC_ON).Ufails(2, :), 'Color', orange, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).RUIO(2).Fact, '--', 'Color', blue, 'LineWidth', 1.5)
+xlim(ax, [69.8 71.5]); ylim(ax, [-5 0]);
 box(ax, 'on'); grid(ax, 'on');
 
 % Create textarrow
-annotation(fig, 'textarrow', [0.639 0.606], [0.317 0.316], ...
+annotation(fig, 'textarrow', [0.385 0.352], [0.336 0.335], ...
     'String', {'Threshold', 'effect'}, 'LineWidth', 1, ...
     'HorizontalAlignment', 'center', 'HeadWidth', 6, ...
     'HeadLength', 6, 'FontSize', 8);
@@ -282,9 +401,9 @@ print -dsvg ../Figs/FTCS_CSTR_actuator_estimation.svg
 %% Sensor fault estimation
 fig = figure('Name', 'Sensor fault estimation');
 subplot(211)
-stairs(t, FTCS(FTC_ON).Yfails(1, :), 'Color', naranja, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).Yfails(1, :), 'Color', orange, 'LineWidth', 1.5)
 hold on; grid on
-stairs(t, FTCS(FTC_ON).UIOO(1).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).UIOO(1).Fsen, '--', 'Color', blue, 'LineWidth', 1.5)
 hold off
 axis([0 Time 0 2.5])
 xlabel('Time [min]'); ylabel('V [l]');
@@ -292,26 +411,26 @@ leg = legend('Fault', 'Estimation', 'Location', 'NorthEast');
 leg.ItemTokenSize = [20, 15];
 
 subplot(212)
-stairs(t, FTCS(FTC_ON).Yfails(3, :), 'Color', naranja, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).Yfails(3, :), 'Color', orange, 'LineWidth', 1.5)
 hold on; grid on
-stairs(t, FTCS(FTC_ON).UIOO(2).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).UIOO(2).Fsen, '--', 'Color', blue, 'LineWidth', 1.5)
 hold off
 axis([0 Time -2.5 0])
 xlabel('Time [min]'); ylabel('T [K]');
 
 % Create axes
-ax = axes('Parent', fig, 'Position', [0.33 0.191 0.262 0.204], 'FontSize', 8);
+ax = axes('Parent', fig, 'Position', [0.47 0.191 0.344 0.204], 'FontSize', 8);
 hold(ax, 'on');
-stairs(t, FTCS(FTC_ON).Yfails(3, :), 'Color', naranja, 'LineWidth', 1.5)
-stairs(t, FTCS(FTC_ON).UIOO(2).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
-xlim(ax, [70 79]); ylim(ax, [-2.005 -1.97]);
+stairs(t, FTCS(FTC_ON).Yfails(3, :), 'Color', orange, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).UIOO(2).Fsen, '--', 'Color', blue, 'LineWidth', 1.5)
+xlim(ax, [10 20]); ylim(ax, [-2.002 -1.98]);
 box(ax, 'on'); grid(ax, 'on');
 
 % Create axes
 ax = axes('Parent', fig, 'Position', [0.225 0.657 0.284 0.211], 'FontSize', 8);
 hold(ax, 'on');
-stairs(t, FTCS(FTC_ON).Yfails(1, :), 'Color', naranja, 'LineWidth', 1.5)
-stairs(t, FTCS(FTC_ON).UIOO(1).Fsen, '--', 'Color', azul, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).Yfails(1, :), 'Color', orange, 'LineWidth', 1.5)
+stairs(t, FTCS(FTC_ON).UIOO(1).Fsen, '--', 'Color', blue, 'LineWidth', 1.5)
 xlim(ax, [49.5 53]); ylim(ax, [1 2.5]);
 box(ax, 'on'); grid(ax, 'on');
 
@@ -333,7 +452,7 @@ stairs(t, FTCS(FTC_ON).U(1, :), 'k--', 'LineWidth', 1.5);
 plot(t, umax(1)*ones(1, length(t)), 'r--', 'LineWidth', 1.5);
 xlabel('Time [min]'); ylabel('Qs [l/m]'); grid on; hold off;
 xlim([0 Time])
-leg = legend('Constraints', 'MPC', 'FT-MPC', 'Location', 'NorthEast');
+leg = legend('Constraints', 'MPC', 'FT-MPC', 'Location', 'SouthEast');
 leg.ItemTokenSize = [20, 15];
 set(leg, 'Orientation', 'horizontal');
 subplot(2, 1, 2)
@@ -344,11 +463,27 @@ stairs(t, FTCS(FTC_ON).U(2, :), 'k--', 'LineWidth', 1.5);
 xlabel('Time [min]'); ylabel('Qc [l/m]'); grid on; hold off;
 xlim([0 Time])
 
-annotation(fig, 'textarrow', [0.235 0.24], [0.366 0.33], ...
+annotation(fig, 'textarrow', [0.698 0.726], [0.33 0.304], ...
     'String', {'FT-MPC fault', 'compensation'}, 'LineWidth', 1, 'HorizontalAlignment','center', ...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
-annotation(fig, 'textarrow', [0.74 0.786], [0.35 0.216], ...
+annotation(fig, 'textarrow', [0.235 0.261], [0.352 0.22], ...
     'String', {'MPC mistaken', 'fault compensation'}, 'LineWidth', 1, 'HorizontalAlignment', 'center',...
     'HeadWidth', 6, 'HeadLength', 6, 'FontSize', 8);
 
 print -dsvg ../Figs/FTCS_CSTR_input.svg
+
+%% Period consumption
+fig = figure(10);
+axes1 = axes('Parent', fig, 'Position', [0.13 0.314 0.775 0.442]);
+area(t, (FTCS(FTC_ON).time_MHE+FTCS(FTC_ON).time_MPC+FTCS(FTC_ON).time_FDD)*100/Ts, 'FaceColor', green); hold(axes1, 'on');
+area(t, FTCS(FTC_ON).time_MPC*100/Ts, 'FaceColor', yellow, 'FaceAlpha', 0.5);
+area(t, FTCS(FTC_ON).time_MHE*100/Ts, 'FaceColor', blue, 'FaceAlpha', 1);
+area(t, FTCS(FTC_ON).time_FDD*100/Ts, 'FaceColor', red, 'FaceAlpha', 0.7);
+xlabel('Time [min]'); ylabel('Period [%]'); grid on
+axis([0 Time 0 100]);
+leg = legend('All', 'MPC', 'MHE', 'FDD');
+set(leg, 'Location', 'NorthEast');
+set(axes1, 'FontSize', 8);
+leg.ItemTokenSize = [20, 10];
+
+print -dsvg ../Figs/periodLoad.svg
