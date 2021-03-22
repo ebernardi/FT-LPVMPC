@@ -72,7 +72,6 @@ load data
 % |u| ≤ Usp
 % u_abs = [10; 5]; % umax-u_ss (can't handle asymmetric input constraints)
 % % Terminal ingredients
-% % run terminal_ingredients
 % run terminalIngredients
 % ellipse(Wbmi, xsp, 20, 'black', '-')
 % 
@@ -177,7 +176,9 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
 
     FTCS(FT).X_MHE = repmat(x0, 1, N_MHE+1);    % MHE states
     FTCS(FT).U_MHE = repmat(u0, 1, N_MHE);        % MHE inputs
-    FTCS(FT).elapsed_time = zeros(Nsim, 1) ;          % MPC elapsed times 
+    FTCS(FT).time_MPC = zeros(Nsim, 1) ;          % MPC elapsed times 
+    FTCS(FT).time_MHE = zeros(Nsim, 1) ;          % MHE elapsed times 
+    FTCS(FT).time_FDD = zeros(Nsim, 1) ;          % Observers elapsed times 
 
     % Initial states and inputs
     FTCS(FT).X(:, 1) = x0;
@@ -200,10 +201,17 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         
         %% Set-point changes
         if tk == 7
-            Vr = V_min+1;
+%             Vr = V_min+1;
+%             Tr = Tr_mid;
+%             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+%             xsp = [Vr; Ca; Tr];
+%             Qs = double(solve(qe - qs));
+%             Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+%             usp = [Qs; Qc];
+            Vr = V_max;
             Tr = Tr_mid;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
-            xsp = [Vr; Ca; Tr];
+            xsp = [Vr; Ca; Tr];            
             Qs = double(solve(qe - qs));
             Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
             usp = [Qs; Qc];
@@ -224,10 +232,17 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
             Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
             usp = [Qs; Qc];
         elseif tk == 65
-            Vr = V_max;
+%             Vr = V_max;
+%             Tr = Tr_mid;
+%             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
+%             xsp = [Vr; Ca; Tr];            
+%             Qs = double(solve(qe - qs));
+%             Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
+%             usp = [Qs; Qc];
+            Vr = V_min+1;
             Tr = Tr_mid;
             Ca = CAe/(1+(k0*(Vr/qe)*exp(-E_R/Tr)));
-            xsp = [Vr; Ca; Tr];            
+            xsp = [Vr; Ca; Tr];
             Qs = double(solve(qe - qs));
             Qc = double(solve(qe/Vr*(Te-Tr) - k1*Ca*exp(-E_R/Tr) + k2*(qc/Vr)*(1-exp(-k3/qc))*(Tce-Tr) == 0));
             usp = [Qs; Qc];
@@ -252,7 +267,10 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
             return;
         end
         FTCS(FT).mu_mhe(:, k) = sol;
-
+        t_tic = toc(t_tic) ;              % Get time elapsed
+        FTCS(FT).time_MHE(k) = t_tic ;   % Store the time elapsed for the run
+        
+        t_tic = tic;    % To get time evaluated 
         %% MPC QP
         [sol, diag] = mpc{FTCS(FT).Y_hat(:, k), FTCS(FT).Xsp(:, k), FTCS(FT).Usp(:, k), FTCS(FT).Uff(:, k), FTCS(FT).mu_mhe(:, k)};
         if diag
@@ -265,7 +283,7 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         xa = sol{4};
         
         t_tic = toc(t_tic) ;              % Get time elapsed
-        FTCS(FT).elapsed_time(k) = t_tic ;   % Store the time elapsed for the run
+        FTCS(FT).time_MPC(k) = t_tic ;   % Store the time elapsed for the run
 
         %% Actuator fault income
         % No fault
@@ -279,13 +297,21 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         end
  
         % Q2 fault
-        if tk > 10 && tk < 20
-            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-10)/1))];
+        if tk > 70 && tk < 80
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-70)/1))];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
-        elseif tk >= 20 && tk < 22
-            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-20)/1))];
+        elseif tk >= 80 && tk < 82
+            FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-80)/1))];
             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
         end
+%         % Q2 fault
+%         if tk > 10 && tk < 20
+%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2+Fail_Q2*(exp(-2*(tk-10)/1))];
+%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+%         elseif tk >= 20 && tk < 22
+%             FTCS(FT).Ufails(:, k) = [0; -Fail_Q2*(exp(-8*(tk-20)/1))];
+%             FTCS(FT).Ufail(:, k) = FTCS(FT).U(:, k) + FTCS(FT).Ufails(:, k);
+%         end
 
         % Natural system saturation
         for j = 1:nu
@@ -314,15 +340,24 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         %% Sensor fault income
         FTCS(FT).Yfails(:, k) = [0; 0; 0];
         FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k);
-        
-        if tk > 70 && tk < 80
-            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-70)/1))];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-70)/1))];
-        elseif tk >= 80 && tk < 82
-            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-8*(tk-80)/1))];
-            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-8*(tk-80)/1))];
-        end
 
+        % Temp. fault
+        if tk > 10 && tk < 20
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-10)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-10)/1))];
+        elseif tk >= 20 && tk < 22
+            FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-8*(tk-20)/1))];
+            FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-8*(tk-20)/1))];
+        end
+%         if tk > 70 && tk < 80
+%             FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-70)/1))];
+%             FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3-Fail_S3*(exp(-5*(tk-70)/1))];
+%         elseif tk >= 80 && tk < 82
+%             FTCS(FT).Yfails(:, k) = [0; 0; Fail_S3*(exp(-8*(tk-80)/1))];
+%             FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [0; 0; Fail_S3*(exp(-8*(tk-80)/1))];
+%         end
+
+        % Volume fault
         if tk > 50 && tk < 60
             FTCS(FT).Yfails(:, k) = [Fail_S1-Fail_S1*(exp(-8*(tk-50)/1)); 0; 0];
             FTCS(FT).Yfail(:, k) = FTCS(FT).Y(:, k) + [Fail_S1-Fail_S1*(exp(-8*(tk-50)/1)); 0; 0];
@@ -331,6 +366,8 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
         %% membership
         FTCS(FT).mu_fuzzy(:, k) = membership(FTCS(FT).Y(:, k), V_min, V_mid, V_max, Tr_min, Tr_mid, Tr_max);
 
+        t_tic = tic;    % To get time evaluated 
+       
         %% LPV-RUIO 1
         RUIO(1).Phi(:, k+1) = zeros(N, 1);
         RUIO(1).X(:, k) = zeros(nx, 1);
@@ -488,7 +525,11 @@ for FT = FTC_OFF:FTC_ON    % 1 - FT is off; 2 -  FT is on
             FTCS(FT).Uff(:, k) = [0; 0];
             FTCS(FT).Y_hat(:, k) = FTCS(FT).Yfail(:, k);            
         end
-                
+        
+        t_tic = toc(t_tic) ;              % Get time elapsed
+        FTCS(FT).time_FDD(k) = t_tic ;   % Store the time elapsed for the run
+
+        %% Data        
         % MHE horizon update
         FTCS(FT).X_MHE = [FTCS(FT).X_MHE(:, 2:end) FTCS(FT).Y_hat(:, k)];                         % Update sensor fault compensation
         FTCS(FT).U_MHE = [FTCS(FT).U_MHE(:, 2:end) FTCS(FT).U(:, k)+FTCS(FT).Uff(:, k)]; % Update actuator fault compensation

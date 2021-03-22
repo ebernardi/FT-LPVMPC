@@ -66,14 +66,14 @@ sol = optimize(constraints, objective, ops);
 Wbmi = eye(size(value(Z)))/value(Z);
 
 %% Figure
-Z = Polyhedron('lb', [xmin; umin], 'ub', [xmax; umax]); % Extended set
-
-Xx = projection(Z, 1:nx); Xx = minHRep(Xx);
-Uu = projection(Z, nx+1:nx+nu); Uu = minHRep(Uu);
-setX = [Xx.A Xx.b];
-setU = [Uu.A Uu.b];
-
-plot3(xsp(1), xsp(2), xsp(3), '*')
-hold on
-ellipse(Wbmi, xsp, 20, 'red', '-')
-% plot(Xx)
+% Z = Polyhedron('lb', [xmin; umin], 'ub', [xmax; umax]); % Extended set
+% 
+% Xx = projection(Z, 1:nx); Xx = minHRep(Xx);
+% Uu = projection(Z, nx+1:nx+nu); Uu = minHRep(Uu);
+% setX = [Xx.A Xx.b];
+% setU = [Uu.A Uu.b];
+% 
+% plot3(xsp(1), xsp(2), xsp(3), '*')
+% hold on
+% ellipse(Wbmi, xsp, 20, 'red', '-')
+% % plot(Xx)
