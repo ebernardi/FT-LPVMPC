@@ -24,7 +24,7 @@ Simulation results, based on a typical chemical industrial process, is given to 
 - LMI Lab
 
 ## Paper info
-Soon...
+Bernardi, Emanuel, and Eduardo J. Adam. "Fault-tolerant predictive control based on linear parameter varying scheme for industrial processes." *Journal of the Taiwan Institute of Chemical Engineers* 129 (2021): 1-14.
 
 Send comments and questions to:
 
